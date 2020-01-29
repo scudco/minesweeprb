@@ -1,40 +1,62 @@
-# Minesweeprb
+# Minesweeper
 
-Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/minesweeprb`. To experiment with that code, run `bin/console` for an interactive prompt.
+Use clues on the gameboard to deduce locations of mines. Correctly reveal all non-mine squares to win.
 
-TODO: Delete this and the text above, and describe your gem
+## Rules
+A gameboard is composed of a number of squares laid out in a rectangle. 
 
-## Installation
+A square hold either a Clue or a Mine
 
-Add this line to your application's Gemfile:
+### Clue Square
+A Clue Square will contain a number representing the numbers of mines that border itself. If the Clue Square has no neighboring mines then it will be blank.
 
-```ruby
-gem 'minesweeprb'
+For example, a Clue Square containing a "1" will have exactly one mine in one of the spaces that borders itself.
+There is a mine in exactly one of the ? squares.
+```
+◼ ◼ ◼
+◼ 1 ◼
+◼ ◼ ◼
 ```
 
-And then execute:
+There are no mines surrounding an empty square. Note: Revealing an empty square will reveal all neighboring Clue Squares automatically. For example revealing the square where '▣' is placed (B2) could result in the gameboard looking something like:
+```
+◼ ◼ ◼ ◼ ◼   ◻ ◻ 1 ◼ ◼
+◼ ▣ ◼ ◼ ◼   ◻ ◻ 1 ◼ ◼
+◼ ◼ ◼ ◼ ◼ → 1 2 2 ◼ ◼
+◼ ◼ ◼ ◼ ◼   ◼ ◼ ◼ ◼ ◼
+◼ ◼ ◼ ◼ ◼   ◼ ◼ ◼ ◼ ◼
+```
+where '◻' is an empty Clue Square.
 
-    $ bundle install
+In the example below, there is a mine in exactly 3 of the ? squares. Because the "3" Clue Square only has three unrevealed spaces bordering itself, it is correct to assume that there is mine in each space.
+```
+3 ◼ ◼   3 ⚑ ◼
+◼ ◼ ◼ → ⚑ ⚑ ◼
+◼ ◼ ◼   ◼ ◼ ◼
+```
 
-Or install it yourself as:
+### Mine Square
+Mine Squares should not be revealed. If you believe you have found the location of a Mine then you can mark that square to prevent accidentally revealing it.
 
-    $ gem install minesweeprb
+## Gameboard
+A gameboard contains a Width, Height, and Number of Mines.
 
-## Usage
+The first move is always safe which means a gameboard's Mines are not placed until the first square is revealed.
 
-TODO: Write usage instructions here
+Since the first is always safe, a gameboard is only valid if the number of mines is less than the total number of squares. A valid gameboard must have more than one square. (i.e., 0 < # of Mines < Width * Height)
 
-## Development
+## How To Play
+Reveal squares you believe do not contain a Mine.
 
-After checking out the repo, run `bin/setup` to install dependencies. Then, run `rake spec` to run the tests. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
+Your first move will never reveal a Mine.
 
-To install this gem onto your local machine, run `bundle exec rake install`. To release a new version, update the version number in `version.rb`, and then run `bundle exec rake release`, which will create a git tag for the version, push git commits and tags, and push the `.gem` file to [rubygems.org](https://rubygems.org).
+If you reveal a square that contains a Mine, the game will end.
 
-## Contributing
+## How To Win
+Reveal all Clue Squares without revealing a Mine.
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/[USERNAME]/minesweeprb. This project is intended to be a safe, welcoming space for collaboration, and contributors are expected to adhere to the [code of conduct](https://github.com/[USERNAME]/minesweeprb/blob/master/CODE_OF_CONDUCT.md).
-
-
-## Code of Conduct
-
-Everyone interacting in the Minesweeprb project's codebases, issue trackers, chat rooms and mailing lists is expected to follow the [code of conduct](https://github.com/[USERNAME]/minesweeprb/blob/master/CODE_OF_CONDUCT.md).
+### ASCII Reference
+* Flags `⚑`
+* Squares `◻ ◼ ▣`
+* Numbers `➊ ➋ ➌ ➍ ➎ ➏ ➀ ➁ ➂ ➃ ➄ ➅`
+* Mines `☀ ☼ ✺`

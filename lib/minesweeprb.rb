@@ -1,4 +1,6 @@
-require "minesweeprb/version"
+# frozen_string_literal: true
+
+require 'minesweeprb/version'
 
 module Minesweeprb
   class Error < StandardError; end
