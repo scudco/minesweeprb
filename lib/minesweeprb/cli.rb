@@ -17,5 +17,17 @@ module Minesweeprb
       puts "v#{Minesweeprb::VERSION}"
     end
     map %w[--version -v] => :version
+
+    desc 'play', 'Command description...'
+    method_option :help, aliases: '-h', type: :boolean,
+                         desc: 'Display usage information'
+    def play(*)
+      if options[:help]
+        invoke :help, ['play']
+      else
+        require_relative 'commands/play'
+        Minesweeprb::Commands::Play.new(options).execute
+      end
+    end
   end
 end

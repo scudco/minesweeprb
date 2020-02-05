@@ -2,5 +2,12 @@ require: rubocop-rspec
 
 Style/Documentation:
   Enabled: false
+
 Metrics/BlockLength:
   ExcludedMethods: ['describe']
+
+Style/TrailingCommaInArrayLiteral:
+  EnforcedStyleForMultiline: comma
+
+Style/TrailingCommaInHashLiteral:
+  EnforcedStyleForMultiline: comma

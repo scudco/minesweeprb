@@ -117,5 +117,11 @@ module Minesweeprb
       require 'tty-which'
       TTY::Which.exist?(*args)
     end
+
+    def add_color(str, color)
+      return str if @options['no-color'] || color == :none
+
+      @pastel.decorate(str, color)
+    end
   end
 end
