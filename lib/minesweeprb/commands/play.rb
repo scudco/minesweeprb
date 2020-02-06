@@ -18,15 +18,21 @@ module Minesweeprb
         'l' => :right,
       }.freeze
 
-      attr_reader :game, :game_timer, :pastel, :timers
+      attr_reader :game,
+        :game_timer,
+        :input,
+        :output,
+        :pastel,
+        :timers
 
       def initialize(options)
         @options = options
         @pastel = Pastel.new
         @timers = Timers::Group.new
+        @game_timer = timers.every(0.5) { output.print cursor.current if game&.started? }
       end
 
-      def start_game(output)
+      def start_game
         sizes = Game::SIZES.map.with_index do |size, index|
           too_big = size[:height] * 2 > TTY::Screen.height || size[:width] * 2 > TTY::Screen.width
           disabled = '(screen too small)' if too_big
@@ -44,21 +50,24 @@ module Minesweeprb
 
         @game = Minesweeprb::Game.new(size)
 
-        print_gameboard(output)
+        print_gameboard
       end
 
       def how_to_play
         instructions = []
-        instructions << '(←↓↑→ or hjkl) Move' unless game.over?
+        instructions << '(←↓↑→ or hjkl)Move' unless game.over?
         instructions << '(f or ␣)Flag/Mark' if game.started?
         instructions << '(↵)Reveal' unless game.over?
         instructions << '(r)Restart'
-        instructions << '(q)Quit'
+        instructions << '(q or ⎋)Quit'
         instructions.join('  ')
       end
 
       def execute(input: $stdin, output: $stdout)
-        start_game(output)
+        @input = input
+        @output = output
+
+        start_game
 
         reader
           .on(:keyescape) { exit }
@@ -68,19 +77,18 @@ module Minesweeprb
             when 'q' then exit
             when 'r'
               output.print cursor.clear_screen_down
-              start_game(output)
+              start_game
             when 'f'
               unless game.over?
                 game.cycle_flag
-                print_gameboard(output)
+                print_gameboard
               end
             when 'j', 'k', 'h', 'l'
               unless game.over?
                 game.move(VIM_MAPPING[key])
-                print_gameboard(output)
+                print_gameboard
               end
             end
-
           end.on(:keypress) do |event|
             unless game.over?
               case event.key.name
@@ -92,18 +100,19 @@ module Minesweeprb
                 game.reveal_active_square
               end
 
-              print_gameboard(output)
+              print_gameboard
             end
           end
 
-        loop { reader.read_keypress }
+        Thread.new { loop { timers.wait } }
+        loop { reader.read_keypress(nonblock: false) }
       end
 
       def reader
         @reader ||= TTY::Reader.new
       end
 
-      def print_gameboard(output)
+      def print_gameboard
         total_height = game.height + game.header.lines.length + 1
         output.print cursor.clear_lines(total_height, :down)
         output.print cursor.up(total_height - 2)
@@ -121,7 +130,7 @@ module Minesweeprb
             end
           end
 
-          center(output, chars.join)
+          center(chars.join)
         end
 
         game.squares.each.with_index do |row, y|
@@ -153,7 +162,7 @@ module Minesweeprb
             !game.over? && game.active_square == [x,y] ? pastel.inverse(char): char
           end.join(' ')
 
-          center(output, line)
+          center(line)
         end
 
         output.print cursor.clear_screen_down
@@ -166,16 +175,16 @@ module Minesweeprb
                       pastel.bright_magenta.bold('☹ GAME OVER ☹')
                     end
 
-          center(output, message)
+          center(message)
           output.puts
-          center(output, how_to_play)
+          center(how_to_play)
         else
-          center(output, how_to_play)
+          center(how_to_play)
           output.print cursor.up(total_height + 2)
         end
       end
 
-      def center(output, line)
+      def center(line)
         width = TTY::Screen.width
         padding = (width - (pastel.strip(line.chomp.strip).length)) / 2
         output.print(' ' * [padding, 0].max)
