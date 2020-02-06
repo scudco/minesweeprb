@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require 'pastel'
+require 'timers'
 require 'tty-reader'
 require 'tty-screen'
 
@@ -17,16 +18,15 @@ module Minesweeprb
         'l' => :right,
       }.freeze
 
-      attr_reader :game, :pastel
+      attr_reader :game, :game_timer, :pastel, :timers
 
       def initialize(options)
         @options = options
         @pastel = Pastel.new
+        @timers = Timers::Group.new
       end
 
       def start_game(output)
-        height, width = 
-
         sizes = Game::SIZES.map.with_index do |size, index|
           too_big = size[:height] * 2 > TTY::Screen.height || size[:width] * 2 > TTY::Screen.width
           disabled = '(screen too small)' if too_big
@@ -156,16 +156,17 @@ module Minesweeprb
           center(output, line)
         end
 
-
         output.print cursor.clear_screen_down
         output.puts
 
-        if game.won?
-          center(output, pastel.bright_green.bold('☻ YOU WON ☻'))
-          output.puts
-          center(output, how_to_play)
-        elsif game.lost?
-          center(output, pastel.bright_magenta.bold('☹ GAME OVER ☹'))
+        if game.over?
+          message = if game.won?
+                      pastel.bright_green.bold('☻ YOU WON ☻')
+                    elsif game.lost?
+                      pastel.bright_magenta.bold('☹ GAME OVER ☹')
+                    end
+
+          center(output, message)
           output.puts
           center(output, how_to_play)
         else

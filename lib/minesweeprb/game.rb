@@ -55,7 +55,8 @@ module Minesweeprb
       :pastel,
       :revealed_squares,
       :size,
-      :squares
+      :squares,
+      :start_time
 
     def initialize(size)
       @pastel = Pastel.new
@@ -83,8 +84,14 @@ module Minesweeprb
       [(width / 2).floor, (height / 2).floor]
     end
 
+    def end_time
+      @end_time || now
+    end
+
     def time
-      0
+      return 0 unless start_time
+
+      (end_time - start_time).round
     end
 
     def move(direction)
@@ -140,6 +147,7 @@ module Minesweeprb
       return if over? || flagged_squares.include?(active_square)
 
       reveal_square(active_square)
+      @end_time = now if over?
     end
 
     def squares
@@ -180,6 +188,15 @@ module Minesweeprb
 
     private
 
+    def now
+      Process.clock_gettime(Process::CLOCK_MONOTONIC)
+    end
+
+    def start_game
+      place_mines
+      @start_time = now
+    end
+
     def place_mines
       size[:mines].times do
         pos = random_square
@@ -195,7 +212,7 @@ module Minesweeprb
     end
 
     def reveal_square(square)
-      place_mines if revealed_squares.empty?
+      start_game if revealed_squares.empty?
       return if revealed_squares.keys.include?(square)
       return lose! if mined_squares.include?(square)
 
