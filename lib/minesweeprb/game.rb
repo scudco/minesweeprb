@@ -8,7 +8,6 @@ module Minesweeprb
     DEFAULT_MINE_COUNT = 1
     FLAG = '⚑'
     SQUARE = '◼'
-    ACTIVE_SQUARE = '▣'
     MARK = '⍰'
     CLUES = '◻➊➋➌➍➎➏➐➑'.chars.freeze
     CLOCK = '◷'

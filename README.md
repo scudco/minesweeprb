@@ -2,6 +2,18 @@
 
 Use clues on the gameboard to deduce locations of mines. Correctly reveal all non-mine squares to win.
 
+## Install
+
+```
+gem install minesweerb
+```
+
+## Run
+
+```
+minesweeprb
+```
+
 ## Rules
 A gameboard is composed of a number of squares laid out in a rectangle. 
 
@@ -56,7 +68,17 @@ If you reveal a square that contains a Mine, the game will end.
 Reveal all Clue Squares without revealing a Mine.
 
 ### ASCII Reference
-* Flags `⚑`
-* Squares `◻ ◼ ▣`
-* Numbers `➊ ➋ ➌ ➍ ➎ ➏ ➀ ➁ ➂ ➃ ➄ ➅`
-* Mines `☀ ☼ ✺`
+* Flags `⚑ ⍰`
+* Square `◼`
+* Clues `◻ ➊ ➋ ➌ ➍ ➎ ➏ ➐ ➑`
+* Mine `☀`
+
+
+## TODO
+* Extract Gameboard
+* Simplify logic
+* Repaint only what's necessary
+* Implement timer
+* Add Leaderboard
+* Add custom games (set width, height, and number of mines)
+* Add peek mode, undo, or lives to help users learn
