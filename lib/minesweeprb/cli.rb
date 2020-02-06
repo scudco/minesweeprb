@@ -11,6 +11,8 @@ module Minesweeprb
     # Error raised by this runner
     Error = Class.new(StandardError)
 
+    default_command 'play'
+
     desc 'version', 'minesweeprb version'
     def version
       require_relative 'version'
@@ -18,7 +20,7 @@ module Minesweeprb
     end
     map %w[--version -v] => :version
 
-    desc 'play', 'Command description...'
+    desc 'play', 'Play Minesweeper'
     method_option :help, aliases: '-h', type: :boolean,
                          desc: 'Display usage information'
     def play(*)
