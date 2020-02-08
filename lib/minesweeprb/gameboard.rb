@@ -2,6 +2,7 @@
 
 require 'curses'
 require 'timers'
+require_relative './game'
 
 module Minesweeprb
   class Gameboard
