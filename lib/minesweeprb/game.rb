@@ -1,20 +1,22 @@
 # frozen_string_literal: true
 
-require 'pastel'
-
 module Minesweeprb
   class Game
     DEFAULT_SIZE = 'Tiny'
     DEFAULT_MINE_COUNT = 1
-    FLAG = '⚑'
-    SQUARE = '◼'
-    MARK = '⍰'
-    CLUES = '◻➊➋➌➍➎➏➐➑'.chars.freeze
-    CLOCK = '◷'
-    MINE = '☀'
-    WON_FACE = '☻'
-    LOST_FACE = '☹'
-    PLAYING_FACE = '☺'
+    SPRITES = {
+      clock: '◷',
+      clues: '◻➊➋➌➍➎➏➐➑'.chars.freeze,
+      flag: '✖', # ⚑ Flag does not work in curses?
+      lose_face: '☹',
+      mark: '⍰',
+      mine: '☀',
+      play_face: '☺',
+      square: '◼',
+      win_face: '☻',
+    }.freeze
+    WIN = "#{SPRITES[:win_face]} YOU WON #{SPRITES[:win_face]}"
+    LOSE = "#{SPRITES[:lose_face]} GAME OVER #{SPRITES[:lose_face]}"
     SIZES = [
       {
         name: 'Tiny',
@@ -52,20 +54,24 @@ module Minesweeprb
       :flagged_squares,
       :marked_squares,
       :mined_squares,
-      :pastel,
       :revealed_squares,
       :size,
       :squares,
       :start_time
 
     def initialize(size)
-      @pastel = Pastel.new
       @size = SIZES[size]
+      restart
+    end
+
+    def restart
       @active_square = center
       @flagged_squares = []
       @marked_squares = []
       @mined_squares = []
       @revealed_squares = {}
+      @start_time = nil
+      @end_time = nil
     end
 
     def mines
@@ -116,18 +122,18 @@ module Minesweeprb
 
     def face
       if won?
-        WON_FACE
+        SPRITES[:win_face]
       elsif lost?
-        LOST_FACE
+        SPRITES[:lose_face]
       else
-        PLAYING_FACE
+        SPRITES[:play_face]
       end
     end
 
     def header
-      "#{MINE} #{mines.to_s.rjust(3, '0')}" \
+      "#{SPRITES[:mine]} #{mines.to_s.rjust(3, '0')}" \
       "  #{face}  " \
-      "#{CLOCK} #{time.to_s.rjust(3, '0')}"
+      "#{SPRITES[:clock]} #{time.to_s.rjust(3, '0')}"
     end
 
     def cycle_flag
@@ -156,15 +162,15 @@ module Minesweeprb
           pos = [x,y]
 
           if mined_squares.include?(pos) && (revealed_squares[pos] || over?)
-            MINE
+            SPRITES[:mine]
           elsif flagged_squares.include?(pos)
-            FLAG
+            SPRITES[:flag]
           elsif marked_squares.include?(pos)
-            MARK
+            SPRITES[:mark]
           elsif revealed_squares[pos]
-            CLUES[revealed_squares[pos]]
+            SPRITES[:clues][revealed_squares[pos]]
           else
-            SQUARE
+            SPRITES[:square]
           end
         end
       end
@@ -184,6 +190,10 @@ module Minesweeprb
 
     def over?
       won? || lost?
+    end
+
+    def game_over_message
+      won? ? WIN : LOSE
     end
 
     private
