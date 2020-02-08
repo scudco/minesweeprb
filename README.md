@@ -80,10 +80,11 @@ Reveal all Clue Squares without revealing a Mine.
 
 
 ## TODO
-* Extract Gameboard
+* ~Extract Gameboard~
 * Simplify logic
-* Repaint only what's necessary
-* Implement timer
+* ~Repaint only what's necessary~
+  * Separate mines and timer into separate window?
+* ~Implement timer~
 * Add Leaderboard
 * Add custom games (set width, height, and number of mines)
 * Add peek mode, undo, or lives to help users learn
