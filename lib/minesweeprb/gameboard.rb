@@ -23,6 +23,8 @@ module Minesweeprb
     }.freeze
 
     COLORS = {
+      win: [Curses::A_BOLD | Curses::COLOR_GREEN],
+      lose: [Curses::A_BOLD | Curses::COLOR_MAGENTA],
       Game::SPRITES[:clock] => [Curses::A_BOLD | Curses::COLOR_CYAN],
       Game::SPRITES[:win_face] => [Curses::A_BOLD | Curses::COLOR_YELLOW],
       Game::SPRITES[:lose_face] => [Curses::A_BOLD | Curses::COLOR_RED],
@@ -81,16 +83,6 @@ module Minesweeprb
       end
     end
 
-    def color_for(char)
-      pair = COLOR_PAIRS.index(char)
-
-      if pair
-        Curses.color_pair(pair + 1)
-      else
-        0
-      end
-    end
-
     def process_input(key)
       case key
       when *MOVE.keys then game.move(MOVE[key])
@@ -145,7 +137,17 @@ module Minesweeprb
 
       if game.over?
         window << "\n"
-        window << game.game_over_message.center(window.maxx - 1)
+        outcome = game.won? ? :win : :lose
+        message = game.game_over_message.center(window.maxx - 1)
+        message.chars.each do |char|
+          char_color = color_for(char)
+
+          if char_color.zero?
+            window.attron(color_for(outcome)) { window << char }
+          else
+            window.attron(char_color) { window << char }
+          end
+        end
         Curses.clrtoeol
         window << "\n"
       end
@@ -156,6 +158,16 @@ module Minesweeprb
       window << "\n"
 
       window.refresh
+    end
+
+    def color_for(char)
+      pair = COLOR_PAIRS.index(char)
+
+      if pair
+        Curses.color_pair(pair + 1)
+      else
+        0
+      end
     end
   end
 end
