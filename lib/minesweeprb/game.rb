@@ -23,7 +23,7 @@ module Minesweeprb
       :mined_squares,
       :mines,
       :revealed_squares,
-      :squares,
+      :grid,
       :start_time,
       :width
 
@@ -123,7 +123,7 @@ module Minesweeprb
       @end_time = now if over?
     end
 
-    def squares
+    def grid
       height.times.map do |y|
         width.times.map do |x|
           pos = [x,y]

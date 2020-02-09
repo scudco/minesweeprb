@@ -54,8 +54,8 @@ module Minesweeprb
       setup_curses
     end
 
-    def w_squares
-      windows[:squares]
+    def w_grid
+      windows[:grid]
     end
 
     def w_header
@@ -67,8 +67,10 @@ module Minesweeprb
     end
 
     def draw
-      loop { paint_header && sleep(0.5) }
-      # Thread.new { loop { paint_squares while process_input(w_squares.getch) } }
+      Thread.new { loop { paint_header && sleep(0.5) } }
+
+      paint_grid
+      paint_grid while process_input(w_grid.getch)
     end
 
     def clear
@@ -78,7 +80,7 @@ module Minesweeprb
     private 
 
     def setup_curses
-      init_screen
+      screen = init_screen
       use_default_colors
       start_color
       curs_set(0)
@@ -86,12 +88,25 @@ module Minesweeprb
       self.ESCDELAY = 1;
       mousemask(BUTTON1_CLICKED|BUTTON2_CLICKED|BUTTON3_CLICKED|BUTTON4_CLICKED)
 
+      header = {
+        top: 1,
+        left: (screen.maxx - game.header.length) / 2,
+        cols: game.header.length,
+        rows: 1,
+      }
+      grid = {
+        left: (screen.maxx - (game.width * 2 - 1)) / 2,
+        top: header[:top] + header[:rows],
+        cols: game.width * 2 - 1,
+        rows: game.height,
+      }
+
       @windows = {}
       @windows[:debug] = Window.new(0, 0, 0, 0)
-      @windows[:header] = Window.new(0, 0, 0, 0)
-      @windows[:squares] = Window.new(0, 0, 0, 0)
+      @windows[:header] = build_window(**header)
+      @windows[:grid] = build_window(**grid)
       @windows[:instructions] = Window.new(0, 0, 0, 0)
-      @windows[:squares].keypad(true)
+      @windows[:grid].keypad(true)
 
       COLOR_PAIRS.each.with_index do |char, index|
         fg, bg = COLORS[char]
@@ -99,9 +114,13 @@ module Minesweeprb
       end
     end
 
+    def build_window(rows:, cols:, top:, left:)
+      Window.new(rows, cols, top, left)
+    end
+
     def process_input(key)
       case key
-      when KEY_MOUSE then process_mouse(getmouse)
+      # when KEY_MOUSE then process_mouse(getmouse)
       when *MOVE.keys then game.move(MOVE[key])
       when *REVEAL then game.reveal_active_square
       when *FLAG then game.cycle_flag
@@ -131,9 +150,6 @@ module Minesweeprb
       end
     end
 
-    def how_to_play
-    end
-
     def paint_header
       w_header.setpos(0,0)
 
@@ -152,42 +168,42 @@ module Minesweeprb
       # w_debug << "\n"
     end
 
-    def paint_squares
-      w_squares.clear
-      padding = (w_squares.maxx - game.width * 2) / 2
-      game.squares.each.with_index do |line, row|
-        w_squares << ' ' * padding
-        @game_x, @game_y = w_squares.curx, w_squares.cury if row.zero?
+    def paint_grid
+      w_grid.setpos(0,0)
+
+      game.grid.each.with_index do |line, row|
         line.each.with_index do |char, col|
+          w_grid.setpos(row, col * 2) if col < line.length
+
           if game.active_square == [col, row]
-            w_squares.attron(color_for(char) | A_REVERSE) { w_squares << char }
+            w_grid.attron(color_for(char) | A_REVERSE) { w_grid << char }
           else
-            w_squares.attron(color_for(char)) { w_squares << char }
-          end
-          w_squares << ' ' if col < line.length
-        end
-        clrtoeol
-        w_squares << "\n"
-      end
-
-      if game.over?
-        w_squares << "\n"
-        outcome = game.won? ? :win : :lose
-        message = game.game_over_message.center(w_squares.maxx - 1)
-        message.chars.each do |char|
-          char_color = color_for(char)
-
-          if char_color.zero?
-            w_squares.attron(color_for(outcome)) { w_squares << char }
-          else
-            w_squares.attron(char_color) { w_squares << char }
+            w_grid.attron(color_for(char)) { w_grid << char }
           end
         end
-        clrtoeol
-        w_squares << "\n"
       end
 
-      paint_instructions
+      # if game.over?
+      #   w_grid << "\n"
+      #   outcome = game.won? ? :win : :lose
+      #   message = game.game_over_message.center(w_grid.maxx - 1)
+      #   message.chars.each do |char|
+      #     char_color = color_for(char)
+
+      #     if char_color.zero?
+      #       w_grid.attron(color_for(outcome)) { w_grid << char }
+      #     else
+      #       w_grid.attron(char_color) { w_grid << char }
+      #     end
+      #   end
+      #   w_grid.clrtoeol
+      #   w_grid << "\n"
+      # end
+
+      # paint_instructions
+
+      w_grid.refresh
+      # w_instructions.refresh
     end
 
     def paint_instructions
