@@ -22,13 +22,13 @@ minesweeprb
 ## Rules
 A gameboard is composed of a number of squares laid out in a rectangle. 
 
-A square hold either a Clue or a Mine
+A square holds either a Clue or a Mine
 
 ### Clue Square
 A Clue Square will contain a number representing the numbers of mines that border itself. If the Clue Square has no neighboring mines then it will be blank.
 
 For example, a Clue Square containing a "1" will have exactly one mine in one of the spaces that borders itself.
-There is a mine in exactly one of the ? squares.
+There is a mine in exactly one of the ◼ squares.
 ```
 ◼ ◼ ◼
 ◼ 1 ◼
@@ -45,7 +45,7 @@ There are no mines surrounding an empty square. Note: Revealing an empty square 
 ```
 where '◻' is an empty Clue Square.
 
-In the example below, there is a mine in exactly 3 of the ? squares. Because the "3" Clue Square only has three unrevealed spaces bordering itself, it is correct to assume that there is mine in each space.
+In the example below, there is a mine in exactly 3 of the ⚑ squares. Because the "3" Clue Square only has three unrevealed spaces bordering itself, it is correct to assume that there is mine in each space.
 ```
 3 ◼ ◼   3 ⚑ ◼
 ◼ ◼ ◼ → ⚑ ⚑ ◼
@@ -53,14 +53,14 @@ In the example below, there is a mine in exactly 3 of the ? squares. Because the
 ```
 
 ### Mine Square
-Mine Squares should not be revealed. If you believe you have found the location of a Mine then you can mark that square to prevent accidentally revealing it.
+Mine Squares should not be revealed. If you believe you have found the location of a Mine then you can flag that square to prevent accidentally revealing it.
 
 ## Gameboard
 A gameboard contains a Width, Height, and Number of Mines.
 
 The first move is always safe which means a gameboard's Mines are not placed until the first square is revealed.
 
-Since the first is always safe, a gameboard is only valid if the number of mines is less than the total number of squares. A valid gameboard must have more than one square. (i.e., 0 < # of Mines < Width * Height)
+Since the first move is always safe, a gameboard is only valid if the number of mines is less than the total number of squares. A valid gameboard must have more than one square. (i.e., 0 < # of Mines < Width * Height)
 
 ## How To Play
 Reveal squares you believe do not contain a Mine.
@@ -83,8 +83,9 @@ Reveal all Clue Squares without revealing a Mine.
 * ~Extract Gameboard~
 * Simplify logic
 * ~Repaint only what's necessary~
-  * Separate mines and timer into separate window?
+  * Separate squares and timer into separate window?
 * ~Implement timer~
 * Add Leaderboard
-* Add custom games (set width, height, and number of mines)
+* ~Add custom games (set width, height, and number of mines)~
 * Add peek mode, undo, or lives to help users learn
+* restarting a game brings back to prompt instead of generating a new board of the same dimensions
