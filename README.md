@@ -10,7 +10,7 @@ Use clues on the gameboard to deduce locations of mines. Correctly reveal all no
 ## Install
 
 ```
-gem install minesweerb
+gem install minesweeprb
 ```
 
 ## Run
