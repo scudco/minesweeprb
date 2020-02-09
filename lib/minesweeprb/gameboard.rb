@@ -171,7 +171,7 @@ module Minesweeprb
     def paint_grid
       w_grid.setpos(0,0)
 
-      game.grid.each.with_index do |line, row|
+      game.play_grid.each.with_index do |line, row|
         line.each.with_index do |char, col|
           w_grid.setpos(row, col * 2) if col < line.length
 

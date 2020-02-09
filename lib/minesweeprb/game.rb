@@ -20,10 +20,8 @@ module Minesweeprb
     attr_reader :flagged_squares,
       :height,
       :marked_squares,
-      :mined_squares,
       :mines,
       :revealed_squares,
-      :grid,
       :start_time,
       :width
 
@@ -36,10 +34,11 @@ module Minesweeprb
 
     def restart
       @active_square = center
-      @flagged_squares = []
-      @marked_squares = []
-      @mined_squares = []
-      @revealed_squares = {}
+      @flagged_squares = Set[]
+      @marked_squares = Set[]
+      @mined_squares = Set[]
+      @revealed_squares = Set[]
+      @grid = Array.new(height) { Array.new(width) }
       @start_time = nil
       @end_time = nil
     end
@@ -104,7 +103,7 @@ module Minesweeprb
     end
 
     def cycle_flag
-      return if over? || @revealed_squares.empty? || @revealed_squares.include?(active_square)
+      return if over? || revealed_squares.empty? || revealed_squares.include?(active_square)
 
       if flagged_squares.include?(active_square)
         @flagged_squares -= [active_square]
@@ -119,22 +118,23 @@ module Minesweeprb
     def reveal_active_square
       return if over? || flagged_squares.include?(active_square)
 
-      reveal_square(active_square)
+      x, y = active_square
+      reveal_square(x, y)
       @end_time = now if over?
     end
 
-    def grid
+    def play_grid
       height.times.map do |y|
         width.times.map do |x|
-          pos = [x,y]
+          square = [x,y]
 
-          if mined_squares.include?(pos) && (revealed_squares[pos] || over?)
+          if @mined_squares.include?(square) && (revealed_squares.include?(square) || over?)
             SPRITES[:mine]
-          elsif flagged_squares.include?(pos)
+          elsif revealed_squares.include?(square) || over?
+            SPRITES[:clues][@grid[y][x]]
+          elsif flagged_squares.include?(square)
             SPRITES[:flag]
-          elsif revealed_squares[pos]
-            SPRITES[:clues][revealed_squares[pos]]
-          elsif marked_squares.include?(pos)
+          elsif marked_squares.include?(square)
             SPRITES[:mark]
           else
             SPRITES[:square]
@@ -152,7 +152,7 @@ module Minesweeprb
     end
 
     def lost?
-      (revealed_squares.keys & mined_squares).any?
+      (revealed_squares & @mined_squares).any?
     end
 
     def over?
@@ -171,13 +171,14 @@ module Minesweeprb
 
     def start_game
       place_mines
+      place_clues
       @start_time = now
     end
 
     def place_mines
       mines.times do
         pos = random_square
-        pos = random_square while pos == active_square || mined_squares.include?(pos)
+        pos = random_square while pos == active_square || @mined_squares.include?(pos)
         @mined_squares << pos
       end
     end
@@ -188,43 +189,54 @@ module Minesweeprb
       [x, y]
     end
 
-    def reveal_square(square)
+    def place_clues
+      width.times do |x|
+        height.times do |y|
+          @grid[y][x] = square_value(x,y)
+        end
+      end
+    end
+
+    def square_value(x,y)
+      return if @mined_squares.include?([x,y])
+
+      (neighbors(x,y) & @mined_squares).length
+    end
+
+    def reveal_square(x,y)
+      square = [x,y]
       return if over? || flagged_squares.include?(active_square)
       start_game if revealed_squares.empty?
-      return if revealed_squares.keys.include?(square)
-      return lose! if mined_squares.include?(square)
+      return if revealed_squares.include?(square)
+      return lose! if @mined_squares.include?(square)
 
-      value = square_value(square)
-      @revealed_squares[square] = value
-      neighbors(square).each { |neighbor| reveal_square(neighbor) } if value.zero?
+      @revealed_squares << [x,y]
+      value = @grid[y][x]
+      neighbors(x,y).each { |x,y| reveal_square(x,y) } if value == 0
     end
 
     def lose!
-      @mined_squares.each { |square| @revealed_squares[square] = -1 }
+      @revealed_squares |= @mined_squares
     end
 
-    def square_value(square)
-      (neighbors(square) & mined_squares).length
-    end
-
-    def neighbors(square)
+    def neighbors(x,y)
       [
         # top
-        [square[0] - 1, square[1] - 1],
-        [square[0] - 0, square[1] - 1],
-        [square[0] + 1, square[1] - 1],
+        [x - 1, y - 1],
+        [x - 0, y - 1],
+        [x + 1, y - 1],
 
-        # middle
-        [square[0] - 1, square[1] - 0],
-        [square[0] + 1, square[1] - 0],
+        # sides
+        [x - 1, y - 0],
+        [x + 1, y - 0],
 
         # bottom
-        [square[0] - 1, square[1] + 1],
-        [square[0] - 0, square[1] + 1],
-        [square[0] + 1, square[1] + 1],
+        [x - 1, y + 1],
+        [x - 0, y + 1],
+        [x + 1, y + 1],
       ].select do |x,y|
-        (0...width).include?(x) && (0...height).include?(y)
-      end
+        x.between?(0, width-1) && y.between?(0, height-1)
+      end.to_set
     end
   end
 end
