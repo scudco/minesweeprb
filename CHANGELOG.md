@@ -1,3 +1,8 @@
+### 2020-02-08 0.4.0
+
+* Add custom boards
+* Fix gemspec
+
 ### 2020-02-08 0.3.0
 
 * Add mouse support
