@@ -50,8 +50,8 @@ module Minesweeprb
       },
     ].freeze
 
-    attr_reader :active_square,
-      :flagged_squares,
+    attr_accessor :active_square
+    attr_reader :flagged_squares,
       :marked_squares,
       :mined_squares,
       :revealed_squares,
@@ -165,10 +165,10 @@ module Minesweeprb
             SPRITES[:mine]
           elsif flagged_squares.include?(pos)
             SPRITES[:flag]
-          elsif marked_squares.include?(pos)
-            SPRITES[:mark]
           elsif revealed_squares[pos]
             SPRITES[:clues][revealed_squares[pos]]
+          elsif marked_squares.include?(pos)
+            SPRITES[:mark]
           else
             SPRITES[:square]
           end
@@ -222,6 +222,7 @@ module Minesweeprb
     end
 
     def reveal_square(square)
+      return if over? || flagged_squares.include?(active_square)
       start_game if revealed_squares.empty?
       return if revealed_squares.keys.include?(square)
       return lose! if mined_squares.include?(square)
