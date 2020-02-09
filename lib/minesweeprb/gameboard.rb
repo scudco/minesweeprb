@@ -2,7 +2,6 @@
 
 require 'curses'
 require 'timers'
-require_relative './game'
 
 module Minesweeprb
   class Gameboard
@@ -48,19 +47,39 @@ module Minesweeprb
 
     COLOR_PAIRS = COLORS.keys.freeze
 
-    attr_reader :game, :window, :game_x, :game_y
+    attr_reader :game, :windows, :game_x, :game_y
 
     def initialize(game)
       @game = game
-      @timers = Timers::Group.new
-      @game_timer = @timers.every(0.5) { paint }
       setup_curses
-      Thread.new { loop { @timers.wait } }
+    end
+
+    def w_header
+      windows[:header]
+    end
+
+    def w_grid
+      windows[:grid]
+    end
+
+    def w_status
+      windows[:status]
+    end
+
+    def w_instructions
+      windows[:instructions]
+    end
+
+    def w_debug
+      windows[:debug]
     end
 
     def draw
-      paint
-      draw if process_input(window.getch)
+      # paint_debug
+      Thread.new { loop { paint_header && sleep(0.5) } }
+
+      paint_grid
+      paint_grid while process_input(w_grid.getch)
     end
 
     def clear
@@ -70,19 +89,61 @@ module Minesweeprb
     private 
 
     def setup_curses
-      init_screen
+      screen = init_screen
       use_default_colors
       start_color
       curs_set(0)
       noecho
       self.ESCDELAY = 1;
       mousemask(BUTTON1_CLICKED|BUTTON2_CLICKED|BUTTON3_CLICKED|BUTTON4_CLICKED)
-      @window = Window.new(0, 0, 0, 0)
-      @window.keypad(true)
+
+      header = {
+        top: 1,
+        left: (screen.maxx - game.header.length) / 2,
+        cols: game.header.length,
+        rows: 1,
+      }
+      grid = {
+        left: (screen.maxx - (game.width * 2 - 1)) / 2,
+        top: header[:top] + header[:rows] + 1,
+        cols: game.width * 2 - 1, # leave room for spaces between squares
+        rows: game.height,  # leave room for win/lose status and instructions
+      }
+      status = {
+        left: 0,
+        top: grid[:top] + grid[:rows] + 1,
+        cols: 0,
+        rows: 1,
+      }
+      instructions = {
+        left: 0,
+        top: status[:top] + status[:rows] + 1,
+        cols: 0,
+        rows: 1,
+      }
+      debug = {
+        left: 0,
+        top: screen.maxy - 1,
+        cols: 0,
+        rows: 1,
+      }
+
+      @windows = {}
+      @windows[:header] = build_window(**header)
+      @windows[:grid] = build_window(**grid)
+      @windows[:status] = build_window(**status)
+      @windows[:instructions] = build_window(**instructions)
+      @windows[:debug] = build_window(**debug)
+      @windows[:grid].keypad(true)
+
       COLOR_PAIRS.each.with_index do |char, index|
         fg, bg = COLORS[char]
         init_pair(index + 1, fg, bg || -1)
       end
+    end
+
+    def build_window(rows:, cols:, top:, left:)
+      Window.new(rows, cols, top, left)
     end
 
     def process_input(key)
@@ -99,17 +160,17 @@ module Minesweeprb
     end
 
     def process_mouse(m)
-      top = game_y
-      left = game_x
-      bottom = game_y + game.height
-      right = game_x + game.width * 2 - 1
+      top = w_grid.begy
+      left = w_grid.begx
+      bottom = top + game.height
+      right = left + game.width * 2 - 1
       on_board = (top..bottom).include?(m.y) &&
         (left..right).include?(m.x) &&
-        (m.x - game_x).even?
+        (m.x - w_grid.begx).even?
 
       return if !on_board && !game.over?
 
-      game.active_square = [(m.x - game_x) / 2, m.y - game_y]
+      game.active_square = [(m.x - w_grid.begx) / 2, m.y - w_grid.begy]
 
       case m.bstate
         when BUTTON1_CLICKED then game.reveal_active_square
@@ -117,70 +178,75 @@ module Minesweeprb
       end
     end
 
-    def how_to_play
+    def paint_header
+      w_header.setpos(0,0)
+
+      game.header.chars.each do |char|
+        w_header.attron(color_for(char)) { w_header << char }
+      end
+
+      w_header.refresh
+    end
+
+    def paint_debug
+      COLORS.keys.each do |char|
+        w_debug.attron(color_for(char)) { w_debug << char.to_s }
+      end
+      w_debug.refresh
+    end
+
+    def paint_grid
+      w_grid.setpos(0,0)
+
+      game.play_grid.each.with_index do |line, row|
+        line.each.with_index do |char, col|
+          w_grid.setpos(row, col * 2) if col < line.length
+
+          if game.active_square == [col, row]
+            w_grid.attron(color_for(char) | A_REVERSE) { w_grid << char }
+          else
+            w_grid.attron(color_for(char)) { w_grid << char }
+          end
+        end
+      end
+
+      paint_status
+      paint_instructions
+
+      w_grid.refresh
+      w_status.refresh
+      w_instructions.refresh
+    end
+
+    def paint_status
+      if game.over?
+        w_status.setpos(0,0)
+        outcome = game.won? ? :win : :lose
+        message = game.game_over_message.center(w_status.maxx - 1)
+        message.chars.each do |char|
+          char_color = color_for(char)
+
+          if char_color.zero?
+            w_status.attron(color_for(outcome)) { w_status << char }
+          else
+            w_status.attron(char_color) { w_status << char }
+          end
+        end
+      else
+        w_status.clear
+      end
+    end
+
+    def paint_instructions
       instructions = []
       instructions << '(←↓↑→ or hjkl)Move' unless game.over?
       instructions << '(f or ␣)Flag/Mark' if game.started?
       instructions << '(↵)Reveal' unless game.over?
       instructions << '(r)Restart'
       instructions << '(q or ⎋)Quit'
-      instructions.join('  ')
-    end
 
-    def paint
-      window.clear
-      window << "\n"
-      game.header.center(window.maxx - 1).chars.each do |char|
-        window.attron(color_for(char)) { window << char }
-      end
-      clrtoeol
-      window << "\n"
-
-      # COLOR_PAIRS.each do |char|
-      #   window.attron(color_for(char)) { window << char }
-      # end
-      # clrtoeol
-      # window << "\n"
-
-      padding = (window.maxx - game.width * 2) / 2
-      game.squares.each.with_index do |line, row|
-        window << ' ' * padding
-        @game_x, @game_y = window.curx, window.cury if row.zero?
-        line.each.with_index do |char, col|
-          if game.active_square == [col, row]
-            window.attron(color_for(char) | A_REVERSE) { window << char }
-          else
-            window.attron(color_for(char)) { window << char }
-          end
-          window << ' ' if col < line.length
-        end
-        clrtoeol
-        window << "\n"
-      end
-
-      if game.over?
-        window << "\n"
-        outcome = game.won? ? :win : :lose
-        message = game.game_over_message.center(window.maxx - 1)
-        message.chars.each do |char|
-          char_color = color_for(char)
-
-          if char_color.zero?
-            window.attron(color_for(outcome)) { window << char }
-          else
-            window.attron(char_color) { window << char }
-          end
-        end
-        clrtoeol
-        window << "\n"
-      end
-
-      window << "\n"
-      window << how_to_play.center(window.maxx - 1)
-      clrtoeol
-      window << "\n"
-
-      window.refresh
+      w_instructions.setpos(0,0)
+      w_instructions << instructions.join(' ').center(w_instructions.maxx - 1)
     end
 
     def color_for(char)

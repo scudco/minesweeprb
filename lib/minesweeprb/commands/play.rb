@@ -1,11 +1,9 @@
 # frozen_string_literal: true
 
-require 'tty-reader'
 require 'tty-screen'
 
 require_relative '../command'
-require_relative '../gameboard'
-require_relative '../game_template'
+require_relative '../../minesweeprb'
 
 module Minesweeprb
   module Commands
