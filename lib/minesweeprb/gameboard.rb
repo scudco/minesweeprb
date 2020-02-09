@@ -54,19 +54,28 @@ module Minesweeprb
       setup_curses
     end
 
-    def w_grid
-      windows[:grid]
-    end
-
     def w_header
       windows[:header]
     end
 
+    def w_grid
+      windows[:grid]
+    end
+
+    def w_status
+      windows[:status]
+    end
+
     def w_instructions
-      windows[:header]
+      windows[:instructions]
+    end
+
+    def w_debug
+      windows[:debug]
     end
 
     def draw
+      # paint_debug
       Thread.new { loop { paint_header && sleep(0.5) } }
 
       paint_grid
@@ -96,16 +105,35 @@ module Minesweeprb
       }
       grid = {
         left: (screen.maxx - (game.width * 2 - 1)) / 2,
-        top: header[:top] + header[:rows],
-        cols: game.width * 2 - 1,
-        rows: game.height,
+        top: header[:top] + header[:rows] + 1,
+        cols: game.width * 2 - 1, # leave room for spaces between squares
+        rows: game.height,  # leave room for win/lose status and instructions
+      }
+      status = {
+        left: 0,
+        top: grid[:top] + grid[:rows] + 1,
+        cols: 0,
+        rows: 1,
+      }
+      instructions = {
+        left: 0,
+        top: status[:top] + status[:rows] + 1,
+        cols: 0,
+        rows: 1,
+      }
+      debug = {
+        left: 0,
+        top: screen.maxy - 1,
+        cols: 0,
+        rows: 1,
       }
 
       @windows = {}
-      @windows[:debug] = Window.new(0, 0, 0, 0)
       @windows[:header] = build_window(**header)
       @windows[:grid] = build_window(**grid)
-      @windows[:instructions] = Window.new(0, 0, 0, 0)
+      @windows[:status] = build_window(**status)
+      @windows[:instructions] = build_window(**instructions)
+      @windows[:debug] = build_window(**debug)
       @windows[:grid].keypad(true)
 
       COLOR_PAIRS.each.with_index do |char, index|
@@ -120,7 +148,7 @@ module Minesweeprb
 
     def process_input(key)
       case key
-      # when KEY_MOUSE then process_mouse(getmouse)
+      when KEY_MOUSE then process_mouse(getmouse)
       when *MOVE.keys then game.move(MOVE[key])
       when *REVEAL then game.reveal_active_square
       when *FLAG then game.cycle_flag
@@ -132,17 +160,17 @@ module Minesweeprb
     end
 
     def process_mouse(m)
-      top = game_y
-      left = game_x
-      bottom = game_y + game.height
-      right = game_x + game.width * 2 - 1
+      top = w_grid.begy
+      left = w_grid.begx
+      bottom = top + game.height
+      right = left + game.width * 2 - 1
       on_board = (top..bottom).include?(m.y) &&
         (left..right).include?(m.x) &&
-        (m.x - game_x).even?
+        (m.x - w_grid.begx).even?
 
       return if !on_board && !game.over?
 
-      game.active_square = [(m.x - game_x) / 2, m.y - game_y]
+      game.active_square = [(m.x - w_grid.begx) / 2, m.y - w_grid.begy]
 
       case m.bstate
         when BUTTON1_CLICKED then game.reveal_active_square
@@ -161,11 +189,10 @@ module Minesweeprb
     end
 
     def paint_debug
-      # COLOR_PAIRS.each do |char|
-      #   w_debug.attron(color_for(char)) { w_debug << char }
-      # end
-      # clrtoeol
-      # w_debug << "\n"
+      COLORS.keys.each do |char|
+        w_debug.attron(color_for(char)) { w_debug << char.to_s }
+      end
+      w_debug.refresh
     end
 
     def paint_grid
@@ -183,27 +210,31 @@ module Minesweeprb
         end
       end
 
-      # if game.over?
-      #   w_grid << "\n"
-      #   outcome = game.won? ? :win : :lose
-      #   message = game.game_over_message.center(w_grid.maxx - 1)
-      #   message.chars.each do |char|
-      #     char_color = color_for(char)
-
-      #     if char_color.zero?
-      #       w_grid.attron(color_for(outcome)) { w_grid << char }
-      #     else
-      #       w_grid.attron(char_color) { w_grid << char }
-      #     end
-      #   end
-      #   w_grid.clrtoeol
-      #   w_grid << "\n"
-      # end
-
-      # paint_instructions
+      paint_status
+      paint_instructions
 
       w_grid.refresh
-      # w_instructions.refresh
+      w_status.refresh
+      w_instructions.refresh
+    end
+
+    def paint_status
+      if game.over?
+        w_status.setpos(0,0)
+        outcome = game.won? ? :win : :lose
+        message = game.game_over_message.center(w_status.maxx - 1)
+        message.chars.each do |char|
+          char_color = color_for(char)
+
+          if char_color.zero?
+            w_status.attron(color_for(outcome)) { w_status << char }
+          else
+            w_status.attron(char_color) { w_status << char }
+          end
+        end
+      else
+        w_status.clear
+      end
     end
 
     def paint_instructions
@@ -214,10 +245,8 @@ module Minesweeprb
       instructions << '(r)Restart'
       instructions << '(q or ⎋)Quit'
 
-      w_instructions << "\n"
+      w_instructions.setpos(0,0)
       w_instructions << instructions.join(' ').center(w_instructions.maxx - 1)
-      clrtoeol
-      w_instructions << "\n"
     end
 
     def color_for(char)
