@@ -2,8 +2,6 @@
 
 module Minesweeprb
   class Game
-    DEFAULT_SIZE = 'Tiny'
-    DEFAULT_MINE_COUNT = 1
     SPRITES = {
       clock: '◷',
       clues: '◻➊➋➌➍➎➏➐➑'.chars.freeze,
@@ -17,50 +15,22 @@ module Minesweeprb
     }.freeze
     WIN = "#{SPRITES[:win_face]} YOU WON #{SPRITES[:win_face]}"
     LOSE = "#{SPRITES[:lose_face]} GAME OVER #{SPRITES[:lose_face]}"
-    SIZES = [
-      {
-        name: 'Tiny',
-        width: 5,
-        height: 5,
-        mines: 3,
-      },
-      {
-        name: 'Small',
-        width: 9,
-        height: 9,
-        mines: 10,
-      },
-      {
-        name: 'Medium',
-        width: 13,
-        height: 13,
-        mines: 15,
-      },
-      {
-        name: 'Large',
-        width: 17,
-        height: 17,
-        mines: 20,
-      },
-      {
-        name: 'Huge',
-        width: 21,
-        height: 21,
-        mines: 25,
-      },
-    ].freeze
 
     attr_accessor :active_square
     attr_reader :flagged_squares,
+      :height,
       :marked_squares,
       :mined_squares,
+      :mines,
       :revealed_squares,
-      :size,
       :squares,
-      :start_time
+      :start_time,
+      :width
 
-    def initialize(size)
-      @size = SIZES[size]
+    def initialize(label:, width:, height:, mines:)
+      @width = width
+      @height = height
+      @mines = mines
       restart
     end
 
@@ -74,16 +44,8 @@ module Minesweeprb
       @end_time = nil
     end
 
-    def mines
-      size[:mines] - flagged_squares.size
-    end
-
-    def width
-      size[:width]
-    end
-
-    def height
-      size[:height]
+    def remaining_mines
+      mines - flagged_squares.length
     end
 
     def center
@@ -97,13 +59,13 @@ module Minesweeprb
     def time
       return 0 unless start_time
 
-      (end_time - start_time).round
+      end_time - start_time
     end
 
     def move(direction)
       return if over?
 
-      x, y = @active_square
+      x, y = active_square
 
       case direction
       when :up then y -= 1
@@ -112,6 +74,11 @@ module Minesweeprb
       when :right then x += 1
       end
 
+      self.active_square = [x,y]
+    end
+
+    def active_square=(pos)
+      x, y = pos
       x = x < 0 ? width - 1 : x
       x = x > width - 1 ? 0 : x
       y = y < 0 ? height - 1 : y
@@ -131,9 +98,9 @@ module Minesweeprb
     end
 
     def header
-      "#{SPRITES[:mine]} #{mines.to_s.rjust(3, '0')}" \
+      "#{SPRITES[:mine]} #{remaining_mines.to_s.rjust(3, '0')}" \
       "  #{face}  " \
-      "#{SPRITES[:clock]} #{time.to_s.rjust(3, '0')}"
+      "#{SPRITES[:clock]} #{time.round.to_s.rjust(3, '0')}"
     end
 
     def cycle_flag
@@ -144,7 +111,7 @@ module Minesweeprb
         @marked_squares += [active_square]
       elsif marked_squares.include?(active_square)
         @marked_squares -= [active_square]
-      elsif flagged_squares.length < size[:mines]
+      elsif flagged_squares.length < mines
         @flagged_squares += [active_square]
       end
     end
@@ -181,7 +148,7 @@ module Minesweeprb
     end
 
     def won?
-      !lost? && revealed_squares.count == width * height - size[:mines]
+      !lost? && revealed_squares.count == width * height - mines
     end
 
     def lost?
@@ -208,7 +175,7 @@ module Minesweeprb
     end
 
     def place_mines
-      size[:mines].times do
+      mines.times do
         pos = random_square
         pos = random_square while pos == active_square || mined_squares.include?(pos)
         @mined_squares << pos
@@ -237,7 +204,7 @@ module Minesweeprb
     end
 
     def square_value(square)
-      (neighbors(square) & mined_squares).size
+      (neighbors(square) & mined_squares).length
     end
 
     def neighbors(square)

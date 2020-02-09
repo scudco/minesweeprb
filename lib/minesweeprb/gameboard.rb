@@ -48,11 +48,10 @@ module Minesweeprb
 
     COLOR_PAIRS = COLORS.keys.freeze
 
-    attr_reader :game, :pastel, :window, :game_x, :game_y
+    attr_reader :game, :window, :game_x, :game_y
 
-    def initialize(size)
-      @pastel = Pastel.new
-      @game = Game.new(size)
+    def initialize(game)
+      @game = game
       @timers = Timers::Group.new
       @game_timer = @timers.every(0.5) { paint }
       setup_curses
