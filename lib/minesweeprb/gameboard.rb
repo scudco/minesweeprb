@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
 require 'curses'
-require 'timers'
 
 module Minesweeprb
   class Gameboard
