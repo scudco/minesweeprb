@@ -2,7 +2,6 @@
 
 Use clues on the gameboard to deduce locations of mines. Correctly reveal all non-mine squares to win.
 
-## Demo
 <p align="center">
   <a href="https://i.imgur.com/9VpbRzV.mp4"><img src="https://i.imgur.com/9VpbRzV.jpg?fbplay" width="390"/></a>
 </p>
