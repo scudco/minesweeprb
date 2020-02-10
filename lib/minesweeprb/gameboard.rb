@@ -44,8 +44,6 @@ module Minesweeprb
       Game::SPRITES[:clues][8] => [A_BOLD | COLOR_RED],
     }.freeze
 
-    COLOR_PAIRS = COLORS.keys.freeze
-
     attr_reader :game, :windows, :game_x, :game_y
 
     def initialize(game)
@@ -135,7 +133,7 @@ module Minesweeprb
       @windows[:debug] = build_window(**debug)
       @windows[:grid].keypad(true)
 
-      COLOR_PAIRS.each.with_index do |char, index|
+      COLORS.keys.each.with_index do |char, index|
         fg, bg = COLORS[char]
         init_pair(index + 1, fg, bg || -1)
       end
@@ -249,7 +247,7 @@ module Minesweeprb
     end
 
     def color_for(char)
-      pair = COLOR_PAIRS.index(char)
+      pair = COLORS.keys.index(char)
 
       if pair
         color_pair(pair + 1)
