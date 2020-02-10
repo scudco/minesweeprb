@@ -34,10 +34,10 @@ module Minesweeprb
 
     def restart
       @active_square = center
-      @flagged_squares = Set[]
-      @marked_squares = Set[]
-      @mined_squares = Set[]
-      @revealed_squares = Set[]
+      @flagged_squares = []
+      @marked_squares = []
+      @mined_squares = []
+      @revealed_squares = []
       @grid = Array.new(height) { Array.new(width) }
       @start_time = nil
       @end_time = nil
@@ -236,7 +236,7 @@ module Minesweeprb
         [x + 1, y + 1],
       ].select do |x,y|
         x.between?(0, width-1) && y.between?(0, height-1)
-      end.to_set
+      end
     end
   end
 end
