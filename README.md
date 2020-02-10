@@ -2,10 +2,17 @@
 
 Use clues on the gameboard to deduce locations of mines. Correctly reveal all non-mine squares to win.
 
+## Demo
+<p align="center">
+  <a href="https://i.imgur.com/9VpbRzV.mp4"><img src="https://i.imgur.com/9VpbRzV.jpg?fbplay" width="390"/></a>
+</p>
+
+## Screenshots
 <p align="center">
   <img src="screenshots/play.png" width="940" />
   <img src="screenshots/win.png" width="394" />
 </p>
+
 
 ## Install
 
@@ -45,10 +52,10 @@ There are no mines surrounding an empty square. Note: Revealing an empty square 
 ```
 where '◻' is an empty Clue Square.
 
-In the example below, there is a mine in exactly 3 of the ⚑ squares. Because the "3" Clue Square only has three unrevealed spaces bordering itself, it is correct to assume that there is mine in each space.
+In the example below, there are exactly three mines surrounding the "3" square. Because the "3" Clue Square only has three unrevealed spaces bordering itself, it is correct to assume that there is mine in each space.
 ```
-3 ◼ ◼   3 ⚑ ◼
-◼ ◼ ◼ → ⚑ ⚑ ◼
+3 ◼ ◼   3 ✖ ◼
+◼ ◼ ◼ → ✖ ✖ ◼
 ◼ ◼ ◼   ◼ ◼ ◼
 ```
 
@@ -73,7 +80,7 @@ If you reveal a square that contains a Mine, the game will end.
 Reveal all Clue Squares without revealing a Mine.
 
 ### ASCII Reference
-* Flags `⚑ ⍰`
+* Flags `✖ ⍰`
 * Square `◼`
 * Clues `◻ ➊ ➋ ➌ ➍ ➎ ➏ ➐ ➑`
 * Mine `☀`
@@ -83,9 +90,10 @@ Reveal all Clue Squares without revealing a Mine.
 * ~Extract Gameboard~
 * Simplify logic
 * ~Repaint only what's necessary~
-  * Separate squares and timer into separate window?
+  * ~Separate squares and timer into separate window?~
 * ~Implement timer~
 * Add Leaderboard
 * ~Add custom games (set width, height, and number of mines)~
 * Add peek mode, undo, or lives to help users learn
 * restarting a game brings back to prompt instead of generating a new board of the same dimensions
+* Splash screen
