@@ -1,3 +1,7 @@
+### 2020-02-11 0.4.2
+
+* Fix timer loop and make it actually sleep
+
 ### 2020-02-09 0.4.1
 
 * Fix bug when revealing squares (Set is not a good choice)
