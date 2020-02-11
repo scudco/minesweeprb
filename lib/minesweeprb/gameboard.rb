@@ -73,7 +73,12 @@ module Minesweeprb
 
     def draw
       # paint_debug
-      Thread.new { loop { paint_header && sleep(0.5) } }
+      Thread.new do
+        loop do
+          paint_header
+          sleep(0.5)
+        end
+      end
 
       paint_grid
       paint_grid while process_input(w_grid.getch)
