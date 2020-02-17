@@ -116,10 +116,14 @@ module Minesweeprb
     end
 
     def reveal_active_square
-      return if over? || flagged_squares.include?(active_square)
+      return if over? || flagged_squares.include?(active_square) || revealed_squares.include?(active_square)
 
-      x, y = active_square
-      reveal_square(x, y)
+      return lose! if @mined_squares.include?(active_square)
+
+      start_game if revealed_squares.empty?
+
+      reveal(*active_square)
+
       @end_time = now if over?
     end
 
@@ -203,16 +207,13 @@ module Minesweeprb
       (neighbors(x,y) & @mined_squares).length
     end
 
-    def reveal_square(x,y)
-      square = [x,y]
-      return if over? || flagged_squares.include?(active_square)
-      start_game if revealed_squares.empty?
-      return if revealed_squares.include?(square)
-      return lose! if @mined_squares.include?(square)
+    def reveal(x, y)
+      @revealed_squares << [x, y]
 
-      @revealed_squares << [x,y]
-      value = @grid[y][x]
-      neighbors(x,y).each { |x,y| reveal_square(x,y) } if value == 0
+      if @grid[y][x] == 0
+        squares_to_visit =  (neighbors(x,y) - @revealed_squares)
+        squares_to_visit.each { |x, y| reveal(x, y) }
+      end
     end
 
     def lose!
