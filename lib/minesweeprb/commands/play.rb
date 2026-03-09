@@ -45,12 +45,16 @@ module Minesweeprb
 
       private
 
+      # Gameboard chrome: 1 top margin + 1 header + 1 gap + grid + 1 gap + 1 status + 1 gap + 1 instructions
+      BOARD_CHROME_ROWS = 7
+
       def prompt_size
-        height, width = IO.console.winsize
+        screen_rows, screen_cols = IO.console.winsize
 
         options = SIZES.map do |tmpl|
-          too_big = tmpl.height > height || tmpl.width * 2 - 1 > width
-          disabled = '(screen too small)' if too_big
+          too_tall = tmpl.height + BOARD_CHROME_ROWS > screen_rows
+          too_wide = tmpl.width * 2 - 1 > screen_cols
+          disabled = '(screen too small)' if too_tall || too_wide
           {
             disabled: disabled,
             name: tmpl.label,
@@ -60,7 +64,7 @@ module Minesweeprb
 
         options << { name: 'Quit', value: nil }
 
-        Menu.select('Size:', options)
+        Menu.select('Choose a size:', options)
       end
     end
   end
