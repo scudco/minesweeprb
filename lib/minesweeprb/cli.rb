@@ -18,6 +18,10 @@ module Minesweeprb
           exit
         end
 
+        opts.on("-t", "--theme NAME", "Theme (classic, modern)") do |name|
+          options[:theme] = name
+        end
+
         opts.on("-h", "--help", "Show this help") do
           puts opts
           exit

@@ -10,6 +10,7 @@ RSpec.describe "`minesweeprb` command", type: :cli do
     output = `bundle exec ruby exe/minesweeprb --help`
     expect(output).to include("Usage: minesweeprb")
     expect(output).to include("--version")
+    expect(output).to include("--theme")
     expect(output).to include("--help")
   end
 end

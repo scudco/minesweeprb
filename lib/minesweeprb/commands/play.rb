@@ -4,6 +4,7 @@ require 'io/console'
 require 'curses'
 require_relative '../../minesweeprb'
 require_relative '../menu'
+require_relative '../theme'
 
 module Minesweeprb
   module Commands
@@ -21,6 +22,7 @@ module Minesweeprb
 
       def initialize(options)
         @options = options
+        @theme = @options[:theme] ? Theme[@options[:theme]] : Theme.default
       end
 
       def execute(input: $stdin, output: $stdout)
@@ -36,8 +38,8 @@ module Minesweeprb
           template = prompt_size
           break if template.nil?
 
-          game = Game.new(**template.to_h)
-          Gameboard.new(game).draw
+          game = Game.new(**template.to_h, sprites: @theme.sprites)
+          Gameboard.new(game, theme: @theme).draw
         end
       ensure
         close_screen
