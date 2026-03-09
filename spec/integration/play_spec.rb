@@ -6,7 +6,7 @@ Usage:
   minesweeprb play
 
 Options:
-  -h, [--help], [--no-help]  # Display usage information
+  -h, [--help], [--no-help], [--skip-help]  # Display usage information
 
 Play Minesweeper
     OUT

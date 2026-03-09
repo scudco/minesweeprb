@@ -23,9 +23,9 @@ module Minesweeprb
     # @see http://www.rubydoc.info/gems/tty-command
     #
     # @api public
-    def command(**options)
+    def command(...)
       require 'tty-command'
-      TTY::Command.new(options)
+      TTY::Command.new(...)
     end
 
     # The cursor movement
@@ -63,9 +63,9 @@ module Minesweeprb
     # @see http://www.rubydoc.info/gems/tty-pager
     #
     # @api public
-    def pager(**options)
+    def pager(...)
       require 'tty-pager'
-      TTY::Pager.new(options)
+      TTY::Pager.new(...)
     end
 
     # Terminal platform and OS properties
@@ -83,9 +83,9 @@ module Minesweeprb
     # @see http://www.rubydoc.info/gems/tty-prompt
     #
     # @api public
-    def prompt(**options)
+    def prompt(...)
       require 'tty-prompt'
-      TTY::Prompt.new(options)
+      TTY::Prompt.new(...)
     end
 
     # Get terminal screen properties
@@ -113,9 +113,9 @@ module Minesweeprb
     # @see http://www.rubydoc.info/gems/tty-which
     #
     # @api public
-    def exec_exist?(*args)
+    def exec_exist?(...)
       require 'tty-which'
-      TTY::Which.exist?(*args)
+      TTY::Which.exist?(...)
     end
 
     def add_color(str, color)

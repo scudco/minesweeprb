@@ -8,6 +8,6 @@ RSpec.describe Minesweeprb::Commands::Play do
 
     command.execute(output: output)
 
-    expect(output.string).to eq("OK\n")
+    expect(output.string).to eq("")
   end
 end

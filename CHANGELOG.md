@@ -1,3 +1,7 @@
+### 2026-03-09 0.5.0
+
+* Get working on ruby 4
+
 ### 2020-02-11 0.4.2
 
 * Fix timer loop and make it actually sleep
