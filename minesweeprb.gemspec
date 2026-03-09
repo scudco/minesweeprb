@@ -30,14 +30,4 @@ Gem::Specification.new do |spec|
   spec.require_paths = ['lib']
 
   spec.add_runtime_dependency 'curses'
-  spec.add_runtime_dependency 'thor'
-  spec.add_runtime_dependency 'tty-command'
-  spec.add_runtime_dependency 'tty-cursor'
-  spec.add_runtime_dependency 'tty-editor'
-  spec.add_runtime_dependency 'tty-file'
-  spec.add_runtime_dependency 'tty-pager'
-  spec.add_runtime_dependency 'tty-platform'
-  spec.add_runtime_dependency 'tty-prompt'
-  spec.add_runtime_dependency 'tty-screen'
-  spec.add_runtime_dependency 'tty-which'
 end

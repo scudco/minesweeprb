@@ -1,13 +1,15 @@
 # frozen_string_literal: true
 
-require 'tty-screen'
-
-require_relative '../command'
+require 'io/console'
+require 'curses'
 require_relative '../../minesweeprb'
+require_relative '../menu'
 
 module Minesweeprb
   module Commands
-    class Play < Minesweeprb::Command
+    class Play
+      include Curses
+
       SIZES = [
         # [ label, width, height, # of mines ]
         ['Tiny',    5,  5,  3],
@@ -15,85 +17,50 @@ module Minesweeprb
         ['Medium', 13, 13, 15],
         ['Large',  17, 17, 20],
         ['Huge',   21, 21, 25],
-      ].map { |options| GameTemplate.new(*options) }.freeze
+      ].map { |label, width, height, mines| GameTemplate.new(label:, width:, height:, mines:) }.freeze
 
       def initialize(options)
         @options = options
       end
 
       def execute(input: $stdin, output: $stdout)
-        template = prompt_size(output)
-        template = prompt_custom(output) if template == :custom
+        init_screen
+        use_default_colors
+        start_color
+        curs_set(0)
+        noecho
+        self.ESCDELAY = 1
+        mousemask(BUTTON1_CLICKED|BUTTON2_CLICKED|BUTTON3_CLICKED|BUTTON4_CLICKED)
 
-        game = Game.new(**template.to_h)
-        gameboard = Gameboard.new(game)
-        begin
-          gameboard.draw
-        ensure
-          gameboard.clear
+        loop do
+          template = prompt_size
+          break if template.nil?
+
+          game = Game.new(**template.to_h)
+          Gameboard.new(game).draw
         end
+      ensure
+        close_screen
       end
 
       private
 
-      def prompt_size(output)
-        options = SIZES.map do |option|
-          too_big = option.height > TTY::Screen.height || option.width * 2 - 1 > TTY::Screen.width
+      def prompt_size
+        height, width = IO.console.winsize
+
+        options = SIZES.map do |tmpl|
+          too_big = tmpl.height > height || tmpl.width * 2 - 1 > width
           disabled = '(screen too small)' if too_big
           {
             disabled: disabled,
-            name: option.label,
-            value: option,
+            name: tmpl.label,
+            value: tmpl,
           }
         end
 
-        options << {
-          name: 'Custom',
-          value: :custom
-        }
+        options << { name: 'Quit', value: nil }
 
-        prompt(interrupt: -> { exit 1 }).select('Size:', options, cycle: true)
-      end
-
-      def prompt_custom(output)
-        min_width = 1
-        max_width = TTY::Screen.width / 2 - 1
-        width = prompt.ask("Width (#{min_width}-#{max_width})") do |q|
-          q.required true
-          q.convert :int
-          q.validate do |val|
-            val =~ /\d+/ && (min_width..max_width).include?(val.to_i)
-          end
-        end
-
-        min_height = width == 1 ? 2 : 1
-        max_height = TTY::Screen.height - 10 # leave room for interface
-        height = prompt.ask("Height (#{min_height}-#{max_height})") do |q|
-          q.required true
-          q.convert :int
-          q.validate do |val|
-            val =~ /\d+/ && (min_height..max_height).include?(val.to_i)
-          end
-        end
-
-        min_mines = 1
-        max_mines = width * height - 1
-        mines = prompt.ask("Mines (#{min_mines}-#{max_mines})") do |q|
-          q.required true
-          q.convert :int
-          q.validate do |val|
-            val =~ /\d+/ && (min_mines..max_mines).include?(val.to_i)
-          end
-        end
-
-        GameTemplate.new('Custom', width, height, mines)
-      end
-
-      def clear_output(output)
-        output.print cursor.hide
-        output.print cursor.up(1)
-        output.print cursor.clear_screen_down
-        output.puts
+        Menu.select('Size:', options)
       end
     end
   end

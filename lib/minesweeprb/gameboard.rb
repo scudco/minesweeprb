@@ -9,7 +9,7 @@ module Minesweeprb
     RESTART = ['r'].freeze
     REVEAL = [10, KEY_ENTER].freeze
     FLAG = ['f', ' '].freeze
-    QUIT = ['q', 27].freeze
+    BACK = ['q', 27, 127, KEY_BACKSPACE].freeze
 
     MOVE = {
       KEY_UP => :up,
@@ -48,7 +48,6 @@ module Minesweeprb
 
     def initialize(game)
       @game = game
-      setup_curses
     end
 
     def w_header
@@ -72,8 +71,8 @@ module Minesweeprb
     end
 
     def draw
-      # paint_debug
-      Thread.new do
+      setup_windows
+      @timer_thread = Thread.new do
         loop do
           paint_header
           sleep(0.5)
@@ -82,34 +81,32 @@ module Minesweeprb
 
       paint_grid
       paint_grid while process_input(w_grid.getch)
+    ensure
+      @timer_thread&.kill
+      windows.each_value { |w| w.close rescue nil }
+      @windows = nil
     end
 
-    def clear
-      close_screen
-    end
+    private
 
-    private 
+    def setup_windows
+      clear
+      refresh
 
-    def setup_curses
-      screen = init_screen
-      use_default_colors
-      start_color
-      curs_set(0)
-      noecho
-      self.ESCDELAY = 1;
-      mousemask(BUTTON1_CLICKED|BUTTON2_CLICKED|BUTTON3_CLICKED|BUTTON4_CLICKED)
+      screen_maxx = ::Curses.cols
+      screen_maxy = lines
 
       header = {
         top: 1,
-        left: (screen.maxx - game.header.length) / 2,
+        left: (screen_maxx - game.header.length) / 2,
         cols: game.header.length,
         rows: 1,
       }
       grid = {
-        left: (screen.maxx - (game.width * 2 - 1)) / 2,
+        left: (screen_maxx - (game.width * 2 - 1)) / 2,
         top: header[:top] + header[:rows] + 1,
-        cols: game.width * 2 - 1, # leave room for spaces between squares
-        rows: game.height,  # leave room for win/lose status and instructions
+        cols: game.width * 2 - 1,
+        rows: game.height,
       }
       status = {
         left: 0,
@@ -125,7 +122,7 @@ module Minesweeprb
       }
       debug = {
         left: 0,
-        top: screen.maxy - 1,
+        top: screen_maxy - 1,
         cols: 0,
         rows: 1,
       }
@@ -155,7 +152,7 @@ module Minesweeprb
       when *REVEAL then game.reveal_active_square
       when *FLAG then game.cycle_flag
       when *RESTART then game.restart
-      when *QUIT then return false
+      when *BACK then return false
       end
 
       true
@@ -245,7 +242,7 @@ module Minesweeprb
       instructions << '(f or ␣)Flag/Mark' if game.started?
       instructions << '(↵)Reveal' unless game.over?
       instructions << '(r)Restart'
-      instructions << '(q or ⎋)Quit'
+      instructions << '(⎋)Menu'
 
       w_instructions.setpos(0,0)
       w_instructions << instructions.join(' ').center(w_instructions.maxx - 1)

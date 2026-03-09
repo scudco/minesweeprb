@@ -1,16 +1,15 @@
-RSpec.describe "`minesweeprb play` command", type: :cli do
-  it "executes `minesweeprb help play` command successfully" do
-    output = `minesweeprb help play`
-    expected_output = <<-OUT
-Usage:
-  minesweeprb play
+# frozen_string_literal: true
 
-Options:
-  -h, [--help], [--no-help], [--skip-help]  # Display usage information
+RSpec.describe "`minesweeprb` command", type: :cli do
+  it "prints version with --version flag" do
+    output = `bundle exec ruby exe/minesweeprb --version`
+    expect(output.strip).to match(/\Av\d+\.\d+\.\d+\z/)
+  end
 
-Play Minesweeper
-    OUT
-
-    expect(output).to eq(expected_output)
+  it "prints help with --help flag" do
+    output = `bundle exec ruby exe/minesweeprb --help`
+    expect(output).to include("Usage: minesweeprb")
+    expect(output).to include("--version")
+    expect(output).to include("--help")
   end
 end
