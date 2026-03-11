@@ -19,7 +19,8 @@ task :release_gem, [:version] do |_t, args|
   abort 'VERSION not found in version.rb' if content == new_content
 
   File.write(version_file, new_content)
-  sh "git add #{version_file}"
+  sh 'bundle install'
+  sh "git add #{version_file} Gemfile.lock"
   sh "git commit -m 'Bump version to #{version}'"
   sh "git tag v#{version}"
   sh 'git push --tags'

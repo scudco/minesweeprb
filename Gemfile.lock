@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    minesweeprb (0.5.0.rc1)
+    minesweeprb (0.5.0.rc2)
       curses
 
 GEM
