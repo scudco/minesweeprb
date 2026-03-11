@@ -9,7 +9,7 @@ module Minesweeprb
     RESTART = ['r'].freeze
     REVEAL = [10, KEY_ENTER].freeze
     FLAG = ['f', ' '].freeze
-    QUIT = ['q', 27].freeze
+    BACK = ['q', 27, 127, KEY_BACKSPACE].freeze
 
     MOVE = {
       KEY_UP => :up,
@@ -22,33 +22,13 @@ module Minesweeprb
       'l' => :right,
     }.freeze
 
-    COLORS = {
-      win: [A_BOLD | COLOR_GREEN],
-      lose: [A_BOLD | COLOR_MAGENTA],
-      Game::SPRITES[:clock] => [A_BOLD | COLOR_CYAN],
-      Game::SPRITES[:win_face] => [A_BOLD | COLOR_YELLOW],
-      Game::SPRITES[:lose_face] => [A_BOLD | COLOR_RED],
-      Game::SPRITES[:play_face] => [A_BOLD | COLOR_CYAN],
-
-      Game::SPRITES[:mine] => [A_BOLD | COLOR_RED],
-      Game::SPRITES[:flag] => [A_BOLD | COLOR_RED],
-      Game::SPRITES[:mark] => [A_BOLD | COLOR_MAGENTA],
-      Game::SPRITES[:clues][0] => [COLOR_BLACK],
-      Game::SPRITES[:clues][1] => [COLOR_BLUE],
-      Game::SPRITES[:clues][2] => [COLOR_GREEN],
-      Game::SPRITES[:clues][3] => [COLOR_MAGENTA],
-      Game::SPRITES[:clues][4] => [COLOR_CYAN],
-      Game::SPRITES[:clues][5] => [COLOR_RED],
-      Game::SPRITES[:clues][6] => [COLOR_YELLOW],
-      Game::SPRITES[:clues][7] => [A_BOLD | COLOR_MAGENTA],
-      Game::SPRITES[:clues][8] => [A_BOLD | COLOR_RED],
-    }.freeze
-
     attr_reader :game, :windows, :game_x, :game_y
 
-    def initialize(game)
+    def initialize(game, theme:)
       @game = game
-      setup_curses
+      @theme = theme
+      @active_square_sprite = theme.sprites[:active_square]
+      build_color_map
     end
 
     def w_header
@@ -72,8 +52,8 @@ module Minesweeprb
     end
 
     def draw
-      # paint_debug
-      Thread.new do
+      setup_windows
+      @timer_thread = Thread.new do
         loop do
           paint_header
           sleep(0.5)
@@ -82,34 +62,61 @@ module Minesweeprb
 
       paint_grid
       paint_grid while process_input(w_grid.getch)
+    ensure
+      @timer_thread&.kill
+      windows.each_value { |w| w.close rescue nil }
+      @windows = nil
     end
 
-    def clear
-      close_screen
+    private
+
+    def build_color_map
+      sprites = @theme.sprites
+      colors = @theme.colors
+
+      @color_entries = []
+      @color_entries << [:win, colors[:win]]
+      @color_entries << [:lose, colors[:lose]]
+      @color_entries << [sprites[:clock], colors[:clock]]
+      @color_entries << [sprites[:win_face], colors[:win_face]]
+      @color_entries << [sprites[:lose_face], colors[:lose_face]]
+      @color_entries << [sprites[:play_face], colors[:play_face]]
+      @color_entries << [sprites[:mine], colors[:mine]]
+      @color_entries << [sprites[:flag], colors[:flag]]
+      @color_entries << [sprites[:mark], colors[:mark]]
+      sprites[:clues].each_with_index do |char, i|
+        @color_entries << [char, colors[:"clue_#{i}"]]
+      end
+
+      @color_map = {}
+      @color_entries.each_with_index do |(key, _), i|
+        @color_map[key] = i
+      end
     end
 
-    private 
+    def setup_windows
+      clear
+      refresh
 
-    def setup_curses
-      screen = init_screen
-      use_default_colors
-      start_color
-      curs_set(0)
-      noecho
-      self.ESCDELAY = 1;
-      mousemask(BUTTON1_CLICKED|BUTTON2_CLICKED|BUTTON3_CLICKED|BUTTON4_CLICKED)
+      screen_maxx = ::Curses.cols
+      screen_maxy = lines
+
+      @color_entries.each_with_index do |(_, color_def), i|
+        fg, bg = color_def
+        init_pair(i + 1, fg, bg || -1)
+      end
 
       header = {
         top: 1,
-        left: (screen.maxx - game.header.length) / 2,
+        left: (screen_maxx - game.header.length) / 2,
         cols: game.header.length,
         rows: 1,
       }
       grid = {
-        left: (screen.maxx - (game.width * 2 - 1)) / 2,
+        left: (screen_maxx - (game.width * 2 - 1)) / 2,
         top: header[:top] + header[:rows] + 1,
-        cols: game.width * 2 - 1, # leave room for spaces between squares
-        rows: game.height,  # leave room for win/lose status and instructions
+        cols: game.width * 2 - 1,
+        rows: game.height,
       }
       status = {
         left: 0,
@@ -125,7 +132,7 @@ module Minesweeprb
       }
       debug = {
         left: 0,
-        top: screen.maxy - 1,
+        top: screen_maxy - 1,
         cols: 0,
         rows: 1,
       }
@@ -137,11 +144,6 @@ module Minesweeprb
       @windows[:instructions] = build_window(**instructions)
       @windows[:debug] = build_window(**debug)
       @windows[:grid].keypad(true)
-
-      COLORS.keys.each.with_index do |char, index|
-        fg, bg = COLORS[char]
-        init_pair(index + 1, fg, bg || -1)
-      end
     end
 
     def build_window(rows:, cols:, top:, left:)
@@ -150,12 +152,12 @@ module Minesweeprb
 
     def process_input(key)
       case key
-      when KEY_MOUSE then process_mouse(getmouse)
+      when KEY_MOUSE then process_mouse((getmouse rescue nil))
       when *MOVE.keys then game.move(MOVE[key])
       when *REVEAL then game.reveal_active_square
       when *FLAG then game.cycle_flag
       when *RESTART then game.restart
-      when *QUIT then return false
+      when *BACK then return false
       end
 
       true
@@ -183,16 +185,24 @@ module Minesweeprb
     def paint_header
       w_header.setpos(0,0)
 
-      game.header.chars.each do |char|
-        w_header.attron(color_for(char)) { w_header << char }
+      game.header_segments.each do |role, text|
+        case role
+        when :face
+          w_header.attron(color_for(text)) { w_header << text }
+        when :mine, :clock
+          sprite = game.sprites[role]
+          w_header.attron(color_for(sprite)) { w_header << text }
+        else
+          w_header << text
+        end
       end
 
       w_header.refresh
     end
 
     def paint_debug
-      COLORS.keys.each do |char|
-        w_debug.attron(color_for(char)) { w_debug << char.to_s }
+      @color_entries.each do |(key, _)|
+        w_debug.attron(color_for(key)) { w_debug << key.to_s }
       end
       w_debug.refresh
     end
@@ -205,7 +215,8 @@ module Minesweeprb
           w_grid.setpos(row, col * 2) if col < line.length
 
           if game.active_square == [col, row]
-            w_grid.attron(color_for(char) | A_REVERSE) { w_grid << char }
+            active_char = @active_square_sprite && char == game.sprites[:square] ? @active_square_sprite : char
+            w_grid.attron(color_for(char) | A_REVERSE) { w_grid << active_char }
           else
             w_grid.attron(color_for(char)) { w_grid << char }
           end
@@ -245,17 +256,17 @@ module Minesweeprb
       instructions << '(f or ␣)Flag/Mark' if game.started?
       instructions << '(↵)Reveal' unless game.over?
       instructions << '(r)Restart'
-      instructions << '(q or ⎋)Quit'
+      instructions << '(⎋)Menu'
 
       w_instructions.setpos(0,0)
       w_instructions << instructions.join(' ').center(w_instructions.maxx - 1)
     end
 
     def color_for(char)
-      pair = COLORS.keys.index(char)
+      idx = @color_map[char]
 
-      if pair
-        color_pair(pair + 1)
+      if idx
+        color_pair(idx + 1)
       else
         0
       end

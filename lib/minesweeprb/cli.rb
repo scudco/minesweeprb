@@ -1,35 +1,37 @@
 # frozen_string_literal: true
 
-require 'thor'
+require 'optparse'
 
 module Minesweeprb
-  # Handle the application command line parsing
-  # and the dispatch to various command objects
-  #
-  # @api public
-  class CLI < Thor
-    # Error raised by this runner
+  class CLI
     Error = Class.new(StandardError)
 
-    default_command 'play'
+    def self.start(argv = ARGV)
+      options = {}
 
-    desc 'version', 'minesweeprb version'
-    def version
-      require_relative 'version'
-      puts "v#{Minesweeprb::VERSION}"
-    end
-    map %w[--version -v] => :version
+      parser = OptionParser.new do |opts|
+        opts.banner = "Usage: minesweeprb [options]"
 
-    desc 'play', 'Play Minesweeper'
-    method_option :help, aliases: '-h', type: :boolean,
-                         desc: 'Display usage information'
-    def play(*)
-      if options[:help]
-        invoke :help, ['play']
-      else
-        require_relative 'commands/play'
-        Minesweeprb::Commands::Play.new(options).execute
+        opts.on("-v", "--version", "Print version") do
+          require_relative 'version'
+          puts "v#{Minesweeprb::VERSION}"
+          exit
+        end
+
+        opts.on("-t", "--theme NAME", "Theme (classic, modern)") do |name|
+          options[:theme] = name
+        end
+
+        opts.on("-h", "--help", "Show this help") do
+          puts opts
+          exit
+        end
       end
+
+      parser.parse!(argv)
+
+      require_relative 'commands/play'
+      Commands::Play.new(options).execute
     end
   end
 end

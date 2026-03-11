@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
 module Minesweeprb
-  class GameTemplate < Struct.new(:label, :width, :height, :mines)
-  end
+  GameTemplate = Data.define(:label, :width, :height, :mines)
 end

@@ -5,7 +5,7 @@ module Minesweeprb
     SPRITES = {
       clock: '◷',
       clues: '◻➊➋➌➍➎➏➐➑'.chars.freeze,
-      flag: '✖', # ⚑ Flag does not work in curses?
+      flag: '✖',
       lose_face: '☹',
       mark: '⍰',
       mine: '☀',
@@ -13,8 +13,6 @@ module Minesweeprb
       square: '◼',
       win_face: '☻',
     }.freeze
-    WIN = "#{SPRITES[:win_face]} YOU WON #{SPRITES[:win_face]}"
-    LOSE = "#{SPRITES[:lose_face]} GAME OVER #{SPRITES[:lose_face]}"
 
     attr_accessor :active_square
     attr_reader :flagged_squares,
@@ -22,13 +20,15 @@ module Minesweeprb
       :marked_squares,
       :mines,
       :revealed_squares,
+      :sprites,
       :start_time,
       :width
 
-    def initialize(label:, width:, height:, mines:)
+    def initialize(label:, width:, height:, mines:, sprites: SPRITES)
       @width = width
       @height = height
       @mines = mines
+      @sprites = sprites
       restart
     end
 
@@ -88,18 +88,29 @@ module Minesweeprb
 
     def face
       if won?
-        SPRITES[:win_face]
+        sprites[:win_face]
       elsif lost?
-        SPRITES[:lose_face]
+        sprites[:lose_face]
       else
-        SPRITES[:play_face]
+        sprites[:play_face]
       end
     end
 
     def header
-      "#{SPRITES[:mine]} #{remaining_mines.to_s.rjust(3, '0')}" \
+      "#{sprites[:mine]} #{remaining_mines.to_s.rjust(3, '0')}" \
       "  #{face}  " \
-      "#{SPRITES[:clock]} #{time.round.to_s.rjust(3, '0')}"
+      "#{sprites[:clock]} #{time.round.to_s.rjust(3, '0')}"
+    end
+
+    def header_segments
+      [
+        [:mine, sprites[:mine]],
+        [nil, " #{remaining_mines.to_s.rjust(3, '0')}  "],
+        [:face, face],
+        [nil, "  "],
+        [:clock, sprites[:clock]],
+        [nil, " #{time.round.to_s.rjust(3, '0')}"],
+      ]
     end
 
     def cycle_flag
@@ -129,15 +140,15 @@ module Minesweeprb
           square = [x,y]
 
           if @mined_squares.include?(square) && (revealed_squares.include?(square) || over?)
-            SPRITES[:mine]
+            sprites[:mine]
           elsif revealed_squares.include?(square) || over?
-            SPRITES[:clues][@grid[y][x]]
+            sprites[:clues][@grid[y][x]]
           elsif flagged_squares.include?(square)
-            SPRITES[:flag]
+            sprites[:flag]
           elsif marked_squares.include?(square)
-            SPRITES[:mark]
+            sprites[:mark]
           else
-            SPRITES[:square]
+            sprites[:square]
           end
         end
       end
@@ -160,7 +171,11 @@ module Minesweeprb
     end
 
     def game_over_message
-      won? ? WIN : LOSE
+      if won?
+        "#{sprites[:win_face]} YOU WON #{sprites[:win_face]}"
+      else
+        "#{sprites[:lose_face]} GAME OVER #{sprites[:lose_face]}"
+      end
     end
 
     private
