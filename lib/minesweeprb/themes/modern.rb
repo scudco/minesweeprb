@@ -39,9 +39,9 @@ module Minesweeprb
     }.freeze
 
     Theme.register(Theme.new(
-      name: 'modern',
-      sprites: MODERN_SPRITES,
-      colors: MODERN_COLORS,
-    ))
+                     name: 'modern',
+                     sprites: MODERN_SPRITES,
+                     colors: MODERN_COLORS
+                   ))
   end
 end

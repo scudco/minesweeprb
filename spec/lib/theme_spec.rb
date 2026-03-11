@@ -5,7 +5,10 @@ require 'minesweeprb/theme'
 RSpec.describe Minesweeprb::Theme do
   let(:required_sprite_keys) { %i[clock clues flag lose_face mark mine play_face square win_face] }
   let(:optional_sprite_keys) { %i[active_square] }
-  let(:required_color_keys) { %i[win lose clock win_face lose_face play_face mine flag mark clue_0 clue_1 clue_2 clue_3 clue_4 clue_5 clue_6 clue_7 clue_8] }
+  let(:required_color_keys) do
+    %i[win lose clock win_face lose_face play_face mine flag mark clue_0 clue_1 clue_2 clue_3 clue_4 clue_5 clue_6 clue_7
+       clue_8]
+  end
 
   describe '.names' do
     it 'includes classic and modern' do

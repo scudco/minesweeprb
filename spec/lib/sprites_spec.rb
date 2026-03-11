@@ -1,6 +1,6 @@
 # frozen_string_literal: true
 
-RSpec.describe "Minesweeprb::Game::SPRITES" do
+RSpec.describe 'Minesweeprb::Game::SPRITES' do
   let(:sprites) { Minesweeprb::Game::SPRITES }
 
   it 'has all required keys' do

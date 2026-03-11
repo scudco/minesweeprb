@@ -43,7 +43,7 @@ module Minesweeprb
       clear
       refresh
 
-      init_pair(1, COLOR_CYAN, -1)    # menu title
+      init_pair(1, COLOR_CYAN, -1) # menu title
       init_pair(2, COLOR_WHITE, COLOR_CYAN) # selected option
       init_pair(3, COLOR_BLACK, -1)  # disabled option
       init_pair(4, COLOR_WHITE, -1)  # hint text
@@ -129,10 +129,10 @@ module Minesweeprb
       banner_left = (@screen_w - banner_w) / 2
       title_left = banner_left + gem_w + GEM_GAP
 
-      gem_top = row + (banner_h - gem_h) / 2
+      gem_top = row + ((banner_h - gem_h) / 2)
       @gem_window = Window.new(gem_h, gem_w + 1, gem_top, banner_left)
 
-      title_top = row + (banner_h - title_h_with_credit) / 2
+      title_top = row + ((banner_h - title_h_with_credit) / 2)
       @title_window = Window.new(title_h, title_w + 1, title_top, title_left)
 
       credit_top = title_top + title_h + 1
@@ -155,11 +155,11 @@ module Minesweeprb
       row = [(@screen_h - total_h) / 2, 0].max
       banner_left = (@screen_w - banner_w) / 2
 
-      gem_top = row + (banner_h - gem_h) / 2
+      gem_top = row + ((banner_h - gem_h) / 2)
       @gem_window = Window.new(gem_h, gem_w + 1, gem_top, banner_left)
 
       title_left = banner_left + gem_w + GEM_GAP
-      title_top = row + (banner_h - title_h) / 2
+      title_top = row + ((banner_h - title_h) / 2)
       @title_window = Window.new(title_h, title_w + 1, title_top, title_left)
       row += banner_h + 1
 
@@ -187,11 +187,11 @@ module Minesweeprb
     end
 
     def max_label_width
-      widths = @options.map { |o|
+      widths = @options.map do |o|
         w = o[:name].length
         w += o[:disabled].length + 1 if o[:disabled]
         w
-      }
+      end
       widths << @title.length
       widths.max
     end
@@ -228,11 +228,11 @@ module Minesweeprb
         @title_window.refresh
       end
 
-      if @credit_window
-        @credit_window.setpos(0, 0)
-        @credit_window.attron(color_pair(6)) { @credit_window << Splash::CREDIT }
-        @credit_window.refresh
-      end
+      return unless @credit_window
+
+      @credit_window.setpos(0, 0)
+      @credit_window.attron(color_pair(6)) { @credit_window << Splash::CREDIT }
+      @credit_window.refresh
     end
 
     def draw_menu

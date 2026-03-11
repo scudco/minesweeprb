@@ -4,25 +4,26 @@ require 'optparse'
 
 module Minesweeprb
   class CLI
-    Error = Class.new(StandardError)
+    class Error < StandardError
+    end
 
     def self.start(argv = ARGV)
       options = {}
 
       parser = OptionParser.new do |opts|
-        opts.banner = "Usage: minesweeprb [options]"
+        opts.banner = 'Usage: minesweeprb [options]'
 
-        opts.on("-v", "--version", "Print version") do
+        opts.on('-v', '--version', 'Print version') do
           require_relative 'version'
           puts "v#{Minesweeprb::VERSION}"
           exit
         end
 
-        opts.on("-t", "--theme NAME", "Theme (classic, modern)") do |name|
+        opts.on('-t', '--theme NAME', 'Theme (classic, modern)') do |name|
           options[:theme] = name
         end
 
-        opts.on("-h", "--help", "Show this help") do
+        opts.on('-h', '--help', 'Show this help') do
           puts opts
           exit
         end

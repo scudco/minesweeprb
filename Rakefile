@@ -5,8 +5,11 @@ require 'rspec/core/rake_task'
 
 RSpec::Core::RakeTask.new(:spec)
 
+require 'rubocop/rake_task'
+RuboCop::RakeTask.new
+
 task default: :spec
-task ci: :spec
+task ci: %w[spec rubocop]
 
 desc 'Release a new version (e.g., rake release_gem[0.5.0])'
 task :release_gem, [:version] do |_t, args|

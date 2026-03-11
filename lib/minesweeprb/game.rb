@@ -14,17 +14,17 @@ module Minesweeprb
       win_face: '☻',
     }.freeze
 
-    attr_accessor :active_square
-    attr_reader :flagged_squares,
-      :height,
-      :marked_squares,
-      :mines,
-      :revealed_squares,
-      :sprites,
-      :start_time,
-      :width
+    attr_reader :active_square,
+                :flagged_squares,
+                :height,
+                :marked_squares,
+                :mines,
+                :revealed_squares,
+                :sprites,
+                :start_time,
+                :width
 
-    def initialize(label:, width:, height:, mines:, sprites: SPRITES)
+    def initialize(width:, height:, mines:, label: nil, sprites: SPRITES) # rubocop:disable Lint/UnusedMethodArgument
       @width = width
       @height = height
       @mines = mines
@@ -73,17 +73,17 @@ module Minesweeprb
       when :right then x += 1
       end
 
-      self.active_square = [x,y]
+      self.active_square = [x, y]
     end
 
     def active_square=(pos)
       x, y = pos
-      x = x < 0 ? width - 1 : x
-      x = x > width - 1 ? 0 : x
-      y = y < 0 ? height - 1 : y
-      y = y > height - 1 ? 0 : y
+      x = width - 1 if x.negative?
+      x = 0 if x > width - 1
+      y = height - 1 if y.negative?
+      y = 0 if y > height - 1
 
-      @active_square = [x,y]
+      @active_square = [x, y]
     end
 
     def face
@@ -97,9 +97,9 @@ module Minesweeprb
     end
 
     def header
-      "#{sprites[:mine]} #{remaining_mines.to_s.rjust(3, '0')}" \
-      "  #{face}  " \
-      "#{sprites[:clock]} #{time.round.to_s.rjust(3, '0')}"
+      "#{sprites[:mine]} #{remaining_mines.to_s.rjust(3, '0')}  " \
+        "#{face}  " \
+        "#{sprites[:clock]} #{time.round.to_s.rjust(3, '0')}"
     end
 
     def header_segments
@@ -107,7 +107,7 @@ module Minesweeprb
         [:mine, sprites[:mine]],
         [nil, " #{remaining_mines.to_s.rjust(3, '0')}  "],
         [:face, face],
-        [nil, "  "],
+        [nil, '  '],
         [:clock, sprites[:clock]],
         [nil, " #{time.round.to_s.rjust(3, '0')}"],
       ]
@@ -137,7 +137,7 @@ module Minesweeprb
     def play_grid
       height.times.map do |y|
         width.times.map do |x|
-          square = [x,y]
+          square = [x, y]
 
           if @mined_squares.include?(square) && (revealed_squares.include?(square) || over?)
             sprites[:mine]
@@ -155,15 +155,15 @@ module Minesweeprb
     end
 
     def started?
-      !over? && revealed_squares.count > 0
+      !over? && revealed_squares.any?
     end
 
     def won?
-      !lost? && revealed_squares.count == width * height - mines
+      !lost? && revealed_squares.count == (width * height) - mines
     end
 
     def lost?
-      (revealed_squares & @mined_squares).any?
+      revealed_squares.intersect?(@mined_squares)
     end
 
     def over?
@@ -207,34 +207,35 @@ module Minesweeprb
     def place_clues
       width.times do |x|
         height.times do |y|
-          @grid[y][x] = square_value(x,y)
+          @grid[y][x] = square_value(x, y)
         end
       end
     end
 
-    def square_value(x,y)
-      return if @mined_squares.include?([x,y])
+    def square_value(x, y)
+      return if @mined_squares.include?([x, y])
 
-      (neighbors(x,y) & @mined_squares).length
+      (neighbors(x, y) & @mined_squares).length
     end
 
-    def reveal_square(x,y)
-      square = [x,y]
+    def reveal_square(x, y)
+      square = [x, y]
       return if over? || flagged_squares.include?(active_square)
+
       start_game if revealed_squares.empty?
       return if revealed_squares.include?(square)
       return lose! if @mined_squares.include?(square)
 
-      @revealed_squares << [x,y]
+      @revealed_squares << [x, y]
       value = @grid[y][x]
-      neighbors(x,y).each { |x,y| reveal_square(x,y) } if value == 0
+      neighbors(x, y).each { |nx, ny| reveal_square(nx, ny) } if value.zero?
     end
 
     def lose!
       @revealed_squares |= @mined_squares
     end
 
-    def neighbors(x,y)
+    def neighbors(x, y)
       [
         # top
         [x - 1, y - 1],
@@ -249,8 +250,8 @@ module Minesweeprb
         [x - 1, y + 1],
         [x - 0, y + 1],
         [x + 1, y + 1],
-      ].select do |x,y|
-        x.between?(0, width-1) && y.between?(0, height-1)
+      ].select do |nx, ny|
+        nx.between?(0, width - 1) && ny.between?(0, height - 1)
       end
     end
   end

@@ -38,9 +38,9 @@ module Minesweeprb
     }.freeze
 
     Theme.register(Theme.new(
-      name: 'classic',
-      sprites: CLASSIC_SPRITES,
-      colors: CLASSIC_COLORS,
-    ))
+                     name: 'classic',
+                     sprites: CLASSIC_SPRITES,
+                     colors: CLASSIC_COLORS
+                   ))
   end
 end

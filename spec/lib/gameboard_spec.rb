@@ -10,10 +10,9 @@ RSpec.describe Minesweeprb::Gameboard do
   before do
     mock_screen = double('screen', maxx: 80, maxy: 24)
     mock_window = double('window',
-      keypad: nil, setpos: nil, refresh: nil, clrtoeol: nil,
-      clear: nil, begy: 0, begx: 0, maxx: 80, maxy: 24,
-      getch: 'q', attron: nil, "<<": nil
-    )
+                         keypad: nil, setpos: nil, refresh: nil, clrtoeol: nil,
+                         clear: nil, begy: 0, begx: 0, maxx: 80, maxy: 24,
+                         getch: 'q', attron: nil, '<<': nil)
     allow(mock_window).to receive(:attron).and_yield
 
     allow_any_instance_of(described_class).to receive(:init_screen).and_return(mock_screen)
@@ -34,12 +33,16 @@ RSpec.describe Minesweeprb::Gameboard do
       def refresh; end
       def clrtoeol; end
       def clear; end
-      def begy; 0; end
-      def begx; 0; end
-      def maxx; 80; end
-      def maxy; 24; end
-      def getch; 'q'; end
-      def attron(*); yield if block_given?; end
+      def begy = 0
+      def begx = 0
+      def maxx = 80
+      def maxy = 24
+      def getch = 'q'
+
+      def attron(*)
+        yield if block_given?
+      end
+
       def <<(str); end
     end)
   end

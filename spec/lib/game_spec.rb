@@ -73,12 +73,14 @@ RSpec.describe Minesweeprb::Game do
 
     it 'flags an unrevealed square' do
       next if big_game.revealed_squares.include?(big_game.active_square)
+
       big_game.cycle_flag
       expect(big_game.flagged_squares).to include(big_game.active_square)
     end
 
     it 'cycles flag -> mark -> unflagged' do
       next if big_game.revealed_squares.include?(big_game.active_square)
+
       pos = big_game.active_square.dup
 
       big_game.cycle_flag
@@ -124,6 +126,7 @@ RSpec.describe Minesweeprb::Game do
       dense.reveal_active_square
       dense.active_square = [0, 0]
       next if dense.revealed_squares.include?(dense.active_square)
+
       dense.cycle_flag
       pos = dense.active_square.dup
       dense.reveal_active_square
@@ -185,6 +188,7 @@ RSpec.describe Minesweeprb::Game do
         # Try revealing remaining squares
         [[1, 0], [0, 1], [1, 1]].each do |pos|
           break if tiny.over?
+
           tiny.active_square = pos
           tiny.reveal_active_square
         end
@@ -211,6 +215,7 @@ RSpec.describe Minesweeprb::Game do
         # Try revealing all other squares until we hit a mine
         [[0, 0], [1, 0], [2, 0], [0, 1], [2, 1], [0, 2], [1, 2], [2, 2]].each do |pos|
           break if dangerous.over?
+
           dangerous.active_square = pos
           dangerous.reveal_active_square
         end
@@ -229,13 +234,12 @@ RSpec.describe Minesweeprb::Game do
   describe '#game_over_message' do
     it 'returns WIN constant when won' do
       allow(game).to receive(:won?).and_return(true)
-      expect(game.game_over_message).to eq(Minesweeprb::Game::SPRITES[:win_face] + " YOU WON " + Minesweeprb::Game::SPRITES[:win_face])
+      expect(game.game_over_message).to eq("#{Minesweeprb::Game::SPRITES[:win_face]} YOU WON #{Minesweeprb::Game::SPRITES[:win_face]}")
     end
 
     it 'returns LOSE constant when lost' do
-      allow(game).to receive(:won?).and_return(false)
-      allow(game).to receive(:lost?).and_return(true)
-      expect(game.game_over_message).to eq(Minesweeprb::Game::SPRITES[:lose_face] + " GAME OVER " + Minesweeprb::Game::SPRITES[:lose_face])
+      allow(game).to receive_messages(won?: false, lost?: true)
+      expect(game.game_over_message).to eq("#{Minesweeprb::Game::SPRITES[:lose_face]} GAME OVER #{Minesweeprb::Game::SPRITES[:lose_face]}")
     end
   end
 
@@ -252,6 +256,7 @@ RSpec.describe Minesweeprb::Game do
       dense.reveal_active_square
       dense.active_square = [0, 0]
       next if dense.revealed_squares.include?(dense.active_square)
+
       dense.cycle_flag
       expect(dense.remaining_mines).to eq(9)
     end

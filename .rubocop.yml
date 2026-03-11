@@ -1,13 +1,68 @@
-require: rubocop-rspec
+plugins:
+  - rubocop-rake
+  - rubocop-rspec
+
+AllCops:
+  NewCops: enable
+  TargetRubyVersion: 4.0
 
 Style/Documentation:
   Enabled: false
-
-Metrics/BlockLength:
-  ExcludedMethods: ['describe']
 
 Style/TrailingCommaInArrayLiteral:
   EnforcedStyleForMultiline: comma
 
 Style/TrailingCommaInHashLiteral:
   EnforcedStyleForMultiline: comma
+
+# Game logic has inherently long methods
+Metrics/MethodLength:
+  CountAsOne: ['array', 'hash']
+  Max: 25
+
+Metrics/AbcSize:
+  Max: 55
+
+Metrics/ClassLength:
+  Max: 250
+
+Metrics/CyclomaticComplexity:
+  Max: 10
+
+Metrics/PerceivedComplexity:
+  Max: 12
+
+Layout/LineLength:
+  Max: 150
+
+# clue_0..clue_8 naming is intentional
+Naming/VariableNumber:
+  Enabled: false
+
+# Short param names like x, y are idiomatic for grid code
+Naming/MethodParameterName:
+  AllowedNames: ['x', 'y', 'w', 'h']
+
+Naming/PredicateMethod:
+  Enabled: false
+
+RSpec/MultipleExpectations:
+  Max: 5
+
+RSpec/ExampleLength:
+  Max: 20
+
+RSpec/AnyInstance:
+  Enabled: false
+
+RSpec/VerifiedDoubles:
+  Enabled: false
+
+RSpec/SpecFilePathFormat:
+  Enabled: false
+
+RSpec/SubjectStub:
+  Enabled: false
+
+RSpec/DescribeClass:
+  Enabled: false

@@ -64,7 +64,11 @@ module Minesweeprb
       paint_grid while process_input(w_grid.getch)
     ensure
       @timer_thread&.kill
-      windows.each_value { |w| w.close rescue nil }
+      windows.each_value do |w|
+        w.close
+      rescue StandardError
+        nil
+      end
       @windows = nil
     end
 
@@ -113,9 +117,9 @@ module Minesweeprb
         rows: 1,
       }
       grid = {
-        left: (screen_maxx - (game.width * 2 - 1)) / 2,
+        left: (screen_maxx - ((game.width * 2) - 1)) / 2,
         top: header[:top] + header[:rows] + 1,
-        cols: game.width * 2 - 1,
+        cols: (game.width * 2) - 1,
         rows: game.height,
       }
       status = {
@@ -152,7 +156,11 @@ module Minesweeprb
 
     def process_input(key)
       case key
-      when KEY_MOUSE then process_mouse((getmouse rescue nil))
+      when KEY_MOUSE then process_mouse(begin
+        getmouse
+      rescue StandardError
+        nil
+      end)
       when *MOVE.keys then game.move(MOVE[key])
       when *REVEAL then game.reveal_active_square
       when *FLAG then game.cycle_flag
@@ -163,27 +171,27 @@ module Minesweeprb
       true
     end
 
-    def process_mouse(m)
+    def process_mouse(mouse)
       top = w_grid.begy
       left = w_grid.begx
       bottom = top + game.height
-      right = left + game.width * 2 - 1
-      on_board = (top..bottom).include?(m.y) &&
-        (left..right).include?(m.x) &&
-        (m.x - w_grid.begx).even?
+      right = left + (game.width * 2) - 1
+      on_board = (top..bottom).include?(mouse.y) &&
+                 (left..right).include?(mouse.x) &&
+                 (mouse.x - w_grid.begx).even?
 
       return if !on_board && !game.over?
 
-      game.active_square = [(m.x - w_grid.begx) / 2, m.y - w_grid.begy]
+      game.active_square = [(mouse.x - w_grid.begx) / 2, mouse.y - w_grid.begy]
 
-      case m.bstate
-        when BUTTON1_CLICKED then game.reveal_active_square
-        when BUTTON2_CLICKED, (BUTTON_CTRL | BUTTON1_CLICKED) then game.cycle_flag
+      case mouse.bstate
+      when BUTTON1_CLICKED then game.reveal_active_square
+      when BUTTON2_CLICKED, (BUTTON_CTRL | BUTTON1_CLICKED) then game.cycle_flag
       end
     end
 
     def paint_header
-      w_header.setpos(0,0)
+      w_header.setpos(0, 0)
 
       game.header_segments.each do |role, text|
         case role
@@ -208,7 +216,7 @@ module Minesweeprb
     end
 
     def paint_grid
-      w_grid.setpos(0,0)
+      w_grid.setpos(0, 0)
 
       game.play_grid.each.with_index do |line, row|
         line.each.with_index do |char, col|
@@ -233,7 +241,7 @@ module Minesweeprb
 
     def paint_status
       if game.over?
-        w_status.setpos(0,0)
+        w_status.setpos(0, 0)
         outcome = game.won? ? :win : :lose
         message = game.game_over_message.center(w_status.maxx - 1)
         message.chars.each do |char|
@@ -258,7 +266,7 @@ module Minesweeprb
       instructions << '(r)Restart'
       instructions << '(⎋)Menu'
 
-      w_instructions.setpos(0,0)
+      w_instructions.setpos(0, 0)
       w_instructions << instructions.join(' ').center(w_instructions.maxx - 1)
     end
 
