@@ -61,6 +61,13 @@ RSpec.describe Minesweeprb::Theme do
           end
         end
       end
+
+      it 'has valid color definitions' do
+        theme.colors.each_value do |color_def|
+          expect(color_def).to be_a(Hash)
+          expect(color_def).to have_key(:fg)
+        end
+      end
     end
   end
 end

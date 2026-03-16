@@ -1,200 +1,44 @@
 # frozen_string_literal: true
 
-require 'curses'
+require 'ratatui_ruby'
 require_relative 'splash'
 
 module Minesweeprb
   class Menu
-    include Curses
-
-    QUIT_KEYS = ['q', 27, 127, KEY_BACKSPACE].freeze
+    QUIT_KEYS = %w[q esc backspace].freeze
     GEM_GAP = 2
+    HINT = '(↑↓ or jk)Select (↵)Confirm (⎋)Quit'
 
-    def self.select(title, options)
-      new(title, options).select
+    def self.select(title, options, tui)
+      new(title, options, tui).select
     end
 
-    def initialize(title, options)
+    def initialize(title, options, tui)
       @title = title
       @options = options
+      @tui = tui
       @selected = options.index { |o| !o[:disabled] } || 0
     end
 
     def select
-      setup
       loop do
         draw
-        case w_menu.getch
-        when KEY_UP, 'k'
+        case @tui.poll_event
+        in { type: :key, code: 'up' } | { type: :key, code: 'k' }
           move(-1)
-        when KEY_DOWN, 'j'
+        in { type: :key, code: 'down' } | { type: :key, code: 'j' }
           move(1)
-        when 10, KEY_ENTER
+        in { type: :key, code: 'enter' }
           break @options[@selected][:value] unless @options[@selected][:disabled]
-        when *QUIT_KEYS
+        in { type: :key, code: code } if QUIT_KEYS.include?(code)
           break nil
+        else
+          nil
         end
       end
     end
 
     private
-
-    def setup
-      clear
-      refresh
-
-      init_pair(1, COLOR_CYAN, -1) # menu title
-      init_pair(2, COLOR_WHITE, COLOR_CYAN) # selected option
-      init_pair(3, COLOR_BLACK, -1)  # disabled option
-      init_pair(4, COLOR_WHITE, -1)  # hint text
-      init_pair(5, COLOR_RED, -1)    # splash art
-      init_pair(6, COLOR_CYAN, -1)   # credit link
-
-      @hint = '(↑↓ or jk)Select (↵)Confirm (⎋)Quit'
-      @separator = @options.length - 1
-
-      pick_layout
-      build_windows
-    end
-
-    def pick_layout
-      @screen_h = lines
-      @screen_w = ::Curses.cols
-      @menu_h = @options.length + 6
-      @menu_w = [max_label_width + 4, @hint.length + 2].max
-      @credit_h = 2
-
-      try_large || try_small || (@layout = :none)
-    end
-
-    # Large: large gem left + large title right, credit right-aligned under title
-    def try_large
-      gem = Splash::GEM_LARGE
-      title = Splash::TITLE_LARGE
-      banner_w = art_w(gem) + GEM_GAP + art_w(title)
-      # Credit sits 1 line below title on the right side, within banner height
-      title_h_with_credit = art_h(title) + 1 + 1
-      banner_h = [art_h(gem), title_h_with_credit].max
-      h = banner_h + 1 + @menu_h
-      w = [banner_w, @menu_w].max
-      return false unless h <= @screen_h && w <= @screen_w
-
-      @layout = :large
-      @gem_art = gem
-      @title_art = title
-      true
-    end
-
-    # Small: small gem left + small title right, credit centered below
-    def try_small
-      gem = Splash::GEM_SMALL
-      title = Splash::TITLE_SMALL
-      banner_w = art_w(gem) + GEM_GAP + art_w(title)
-      banner_h = [art_h(gem), art_h(title)].max
-      h = banner_h + 1 + 1 + 1 + @menu_h # banner + gap + credit + gap + menu
-      w = [banner_w, Splash::CREDIT.length, @menu_w].max
-      return false unless h <= @screen_h && w <= @screen_w
-
-      @layout = :small
-      @gem_art = gem
-      @title_art = title
-      true
-    end
-
-    def art_h(art) = art.length
-    def art_w(art) = art.map(&:length).max
-
-    def build_windows
-      case @layout
-      when :large then build_large
-      when :small then build_small
-      else build_menu_only
-      end
-
-      @window.keypad(true)
-    end
-
-    def build_large
-      gem_h = art_h(@gem_art)
-      gem_w = art_w(@gem_art)
-      title_h = art_h(@title_art)
-      title_w = art_w(@title_art)
-      credit_w = Splash::CREDIT.length
-      banner_w = gem_w + GEM_GAP + title_w
-      title_h_with_credit = title_h + 1 + 1
-      banner_h = [gem_h, title_h_with_credit].max
-      total_h = banner_h + 1 + @menu_h
-
-      row = [(@screen_h - total_h) / 2, 0].max
-      banner_left = (@screen_w - banner_w) / 2
-      title_left = banner_left + gem_w + GEM_GAP
-
-      gem_top = row + ((banner_h - gem_h) / 2)
-      @gem_window = Window.new(gem_h, gem_w + 1, gem_top, banner_left)
-
-      title_top = row + ((banner_h - title_h_with_credit) / 2)
-      @title_window = Window.new(title_h, title_w + 1, title_top, title_left)
-
-      credit_top = title_top + title_h + 1
-      @credit_window = Window.new(1, credit_w + 1, credit_top, title_left)
-
-      row += banner_h + 1
-      @window = Window.new(@menu_h, @menu_w, row, (@screen_w - @menu_w) / 2)
-    end
-
-    def build_small
-      gem_h = art_h(@gem_art)
-      gem_w = art_w(@gem_art)
-      title_h = art_h(@title_art)
-      title_w = art_w(@title_art)
-      credit_w = Splash::CREDIT.length
-      banner_w = gem_w + GEM_GAP + title_w
-      banner_h = [gem_h, title_h].max
-      total_h = banner_h + 1 + 1 + 1 + @menu_h
-
-      row = [(@screen_h - total_h) / 2, 0].max
-      banner_left = (@screen_w - banner_w) / 2
-
-      gem_top = row + ((banner_h - gem_h) / 2)
-      @gem_window = Window.new(gem_h, gem_w + 1, gem_top, banner_left)
-
-      title_left = banner_left + gem_w + GEM_GAP
-      title_top = row + ((banner_h - title_h) / 2)
-      @title_window = Window.new(title_h, title_w + 1, title_top, title_left)
-      row += banner_h + 1
-
-      @credit_window = Window.new(1, credit_w + 1, row, (@screen_w - credit_w) / 2)
-      row += 2
-
-      @window = Window.new(@menu_h, @menu_w, row, (@screen_w - @menu_w) / 2)
-    end
-
-    def build_menu_only
-      credit_w = Splash::CREDIT.length
-      total_h = @credit_h + @menu_h
-      row = [(@screen_h - total_h) / 2, 0].max
-
-      if credit_w <= @screen_w
-        @credit_window = Window.new(1, credit_w + 1, row, (@screen_w - credit_w) / 2)
-        row += @credit_h
-      end
-
-      @window = Window.new(@menu_h, @menu_w, row, (@screen_w - @menu_w) / 2)
-    end
-
-    def w_menu
-      @window
-    end
-
-    def max_label_width
-      widths = @options.map do |o|
-        w = o[:name].length
-        w += o[:disabled].length + 1 if o[:disabled]
-        w
-      end
-      widths << @title.length
-      widths.max
-    end
 
     def move(delta)
       next_index = @selected
@@ -207,59 +51,182 @@ module Minesweeprb
     end
 
     def draw
-      draw_splash
-      draw_menu
+      @tui.draw do |frame|
+        area = frame.area
+        layout = pick_layout(area)
+        render_layout(frame, area, layout)
+      end
     end
 
-    def draw_splash
-      if @gem_window && @gem_art
-        @gem_art.each_with_index do |line, i|
-          @gem_window.setpos(i, 0)
-          @gem_window.attron(color_pair(5)) { @gem_window << line }
-        end
-        @gem_window.refresh
+    def pick_layout(area)
+      menu_h = @options.length + 6
+      menu_w = [max_label_width + 4, HINT.length + 2].max
+
+      if fits_large?(area, menu_h)
+        :large
+      elsif fits_small?(area, menu_h, menu_w)
+        :small
+      else
+        :none
       end
-
-      if @title_window
-        @title_art.each_with_index do |line, i|
-          @title_window.setpos(i, 0)
-          @title_window.attron(color_pair(5) | A_BOLD) { @title_window << line }
-        end
-        @title_window.refresh
-      end
-
-      return unless @credit_window
-
-      @credit_window.setpos(0, 0)
-      @credit_window.attron(color_pair(6)) { @credit_window << Splash::CREDIT }
-      @credit_window.refresh
     end
 
-    def draw_menu
-      cols = @menu_w
+    def fits_large?(area, menu_h)
+      banner_w = art_w(Splash::GEM_LARGE) + GEM_GAP + art_w(Splash::TITLE_LARGE)
+      banner_h = [art_h(Splash::GEM_LARGE), art_h(Splash::TITLE_LARGE) + 2].max
+      banner_h + 1 + menu_h <= area.height && banner_w <= area.width
+    end
 
-      w_menu.setpos(0, 0)
-      w_menu.attron(color_pair(1)) { w_menu << @title.center(cols) }
+    def fits_small?(area, menu_h, menu_w)
+      banner_w = art_w(Splash::GEM_SMALL) + GEM_GAP + art_w(Splash::TITLE_SMALL)
+      banner_h = [art_h(Splash::GEM_SMALL), art_h(Splash::TITLE_SMALL)].max
+      h = banner_h + 3 + menu_h
+      w = [banner_w, Splash::CREDIT.length, menu_w].max
+      h <= area.height && w <= area.width
+    end
+
+    def art_h(art) = art.length
+    def art_w(art) = art.map(&:length).max
+
+    def max_label_width
+      widths = @options.map do |o|
+        w = o[:name].length
+        w += o[:disabled].length + 1 if o[:disabled]
+        w
+      end
+      widths << @title.length
+      widths.max
+    end
+
+    def render_layout(frame, area, layout)
+      case layout
+      when :large then render_large(frame, area)
+      when :small then render_small(frame, area)
+      else render_menu_only(frame, area)
+      end
+    end
+
+    def render_large(frame, area)
+      gem_art = Splash::GEM_LARGE
+      title_art = Splash::TITLE_LARGE
+      banner_h = [art_h(gem_art), art_h(title_art) + 2].max
+      rows = vsplit(area, [fill, len(banner_h), len(1), len(@options.length + 6), fill])
+
+      render_banner(frame, rows[1], gem_art, title_art, credit_in_banner: true)
+      render_menu_widget(frame, rows[3])
+    end
+
+    def render_small(frame, area)
+      gem_art = Splash::GEM_SMALL
+      title_art = Splash::TITLE_SMALL
+      banner_h = [art_h(gem_art), art_h(title_art)].max
+      rows = vsplit(area, [fill, len(banner_h), len(1), len(1), len(1), len(@options.length + 6), fill])
+
+      render_banner(frame, rows[1], gem_art, title_art, credit_in_banner: false)
+      render_credit(frame, rows[3])
+      render_menu_widget(frame, rows[5])
+    end
+
+    def render_menu_only(frame, area)
+      if Splash::CREDIT.length <= area.width
+        rows = vsplit(area, [fill, len(1), len(1), len(@options.length + 6), fill])
+        render_credit(frame, rows[1])
+        render_menu_widget(frame, rows[3])
+      else
+        rows = vsplit(area, [fill, len(@options.length + 6), fill])
+        render_menu_widget(frame, rows[1])
+      end
+    end
+
+    def render_banner(frame, area, gem_art, title_art, credit_in_banner:)
+      gem_w = art_w(gem_art)
+      title_w = art_w(title_art)
+      cols = hsplit(area, [fill, len(gem_w), len(GEM_GAP), len(title_w), fill])
+
+      render_art(frame, cols[1], gem_art, splash_style)
+
+      if credit_in_banner
+        title_h = art_h(title_art)
+        title_rows = vsplit(cols[3], [fill, len(title_h), len(1), len(1), fill])
+        render_art(frame, title_rows[1], title_art, title_style)
+        render_credit(frame, title_rows[3])
+      else
+        render_art(frame, cols[3], title_art, title_style)
+      end
+    end
+
+    def render_art(frame, area, art, style)
+      lines = art.map { |text| @tui.line(spans: [@tui.span(content: text, style: style)]) }
+      frame.render_widget(@tui.paragraph(text: lines, alignment: :left), area)
+    end
+
+    def render_credit(frame, area)
+      span = @tui.span(content: Splash::CREDIT, style: credit_style)
+      frame.render_widget(
+        @tui.paragraph(text: [@tui.line(spans: [span])], alignment: :center),
+        area
+      )
+    end
+
+    def render_menu_widget(frame, area)
+      menu_w = [max_label_width + 4, HINT.length + 2].max
+      centered = hsplit(area, [fill, len(menu_w), fill])[1]
+
+      lines = build_menu_lines(menu_w)
+      frame.render_widget(@tui.paragraph(text: lines), centered)
+    end
+
+    def build_menu_lines(menu_w)
+      separator = @options.length - 1
+      lines = [styled_line(@title.center(menu_w), menu_title_style), empty_line]
 
       @options.each_with_index do |option, i|
-        row = i + 2
-        row += 1 if i >= @separator
-        w_menu.setpos(row, 0)
-
-        if option[:disabled]
-          label = "#{option[:name]} #{option[:disabled]}"
-          w_menu.attron(color_pair(3)) { w_menu << label.center(cols) }
-        elsif i == @selected
-          w_menu.attron(color_pair(2) | A_BOLD) { w_menu << option[:name].center(cols) }
-        else
-          w_menu << option[:name].center(cols)
-        end
+        lines << empty_line if i == separator
+        lines << menu_option_line(option, i, menu_w)
       end
 
-      w_menu.setpos(@options.length + 4, 0)
-      w_menu.attron(color_pair(4)) { w_menu << @hint.center(cols) }
-
-      w_menu.refresh
+      lines << empty_line
+      lines << styled_line(HINT.center(menu_w), hint_style)
     end
+
+    def menu_option_line(option, index, menu_w)
+      if option[:disabled]
+        label = "#{option[:name]} #{option[:disabled]}"
+        styled_line(label.center(menu_w), disabled_style)
+      elsif index == @selected
+        styled_line(option[:name].center(menu_w), selected_style)
+      else
+        styled_line(option[:name].center(menu_w), nil)
+      end
+    end
+
+    def styled_line(text, style)
+      @tui.line(spans: [@tui.span(content: text, style: style)])
+    end
+
+    def empty_line
+      @tui.line(spans: [@tui.span(content: '')])
+    end
+
+    # Layout helpers
+    def vsplit(area, constraints)
+      @tui.layout_split(area, direction: :vertical, constraints: constraints)
+    end
+
+    def hsplit(area, constraints)
+      @tui.layout_split(area, direction: :horizontal, constraints: constraints)
+    end
+
+    def fill = @tui.constraint_fill(1)
+    def len(size) = @tui.constraint_length(size)
+
+    # Style helpers
+    def menu_title_style = @menu_title_style ||= @tui.style(fg: :cyan)
+    def selected_style = @selected_style ||= @tui.style(fg: :white, bg: :cyan, modifiers: [:bold])
+    def disabled_style = @disabled_style ||= @tui.style(fg: :dark_gray)
+    def hint_style = @hint_style ||= @tui.style(fg: :white)
+    def splash_style = @splash_style ||= @tui.style(fg: :red)
+    def title_style = @title_style ||= @tui.style(fg: :red, modifiers: [:bold])
+    def credit_style = @credit_style ||= @tui.style(fg: :cyan)
   end
 end

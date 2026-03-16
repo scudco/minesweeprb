@@ -1,7 +1,6 @@
 # frozen_string_literal: true
 
-require 'io/console'
-require 'curses'
+require 'ratatui_ruby'
 require_relative '../../minesweeprb'
 require_relative '../menu'
 require_relative '../theme'
@@ -9,8 +8,6 @@ require_relative '../theme'
 module Minesweeprb
   module Commands
     class Play
-      include Curses
-
       SIZES = [
         # [ label, width, height, # of mines ]
         ['Tiny',    5,  5, 3],
@@ -26,23 +23,15 @@ module Minesweeprb
       end
 
       def execute
-        init_screen
-        use_default_colors
-        start_color
-        curs_set(0)
-        noecho
-        self.ESCDELAY = 1
-        mousemask(BUTTON1_CLICKED | BUTTON2_CLICKED | BUTTON3_CLICKED | BUTTON4_CLICKED)
+        RatatuiRuby.run do |tui|
+          loop do
+            template = prompt_size(tui)
+            break if template.nil?
 
-        loop do
-          template = prompt_size
-          break if template.nil?
-
-          game = Game.new(**template.to_h, sprites: @theme.sprites)
-          Gameboard.new(game, theme: @theme).draw
+            game = Game.new(**template.to_h, sprites: @theme.sprites)
+            Gameboard.new(game, theme: @theme).draw(tui)
+          end
         end
-      ensure
-        close_screen
       end
 
       # Gameboard chrome: 1 top margin + 1 header + 1 gap + grid + 1 gap + 1 status + 1 gap + 1 instructions
@@ -50,12 +39,13 @@ module Minesweeprb
 
       private
 
-      def prompt_size
-        screen_rows, screen_cols = IO.console.winsize
+      def prompt_size(tui)
+        screen_area = nil
+        tui.draw { |frame| screen_area = frame.area }
 
         options = SIZES.map do |tmpl|
-          too_tall = tmpl.height + BOARD_CHROME_ROWS > screen_rows
-          too_wide = (tmpl.width * 2) - 1 > screen_cols
+          too_tall = tmpl.height + BOARD_CHROME_ROWS > screen_area.height
+          too_wide = (tmpl.width * 2) - 1 > screen_area.width
           disabled = '(screen too small)' if too_tall || too_wide
           {
             disabled: disabled,
@@ -66,7 +56,7 @@ module Minesweeprb
 
         options << { name: 'Quit', value: nil }
 
-        Menu.select('Choose a size:', options)
+        Menu.select('Choose a size:', options, tui)
       end
     end
   end

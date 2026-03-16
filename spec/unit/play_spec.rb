@@ -6,17 +6,27 @@ RSpec.describe Minesweeprb::Commands::Play do
   let(:template) { Minesweeprb::GameTemplate.new(label: 'Tiny', width: 5, height: 5, mines: 3) }
 
   before do
-    mock_console = double('console', winsize: [24, 80])
-    allow(IO).to receive(:console).and_return(mock_console)
+    mock_tui = double('tui')
+    mock_frame = double('frame')
+    mock_area = double('area', width: 80, height: 24)
 
-    allow_any_instance_of(described_class).to receive(:init_screen)
-    allow_any_instance_of(described_class).to receive(:use_default_colors)
-    allow_any_instance_of(described_class).to receive(:start_color)
-    allow_any_instance_of(described_class).to receive(:curs_set)
-    allow_any_instance_of(described_class).to receive(:noecho)
-    allow_any_instance_of(described_class).to receive(:ESCDELAY=)
-    allow_any_instance_of(described_class).to receive(:mousemask)
-    allow_any_instance_of(described_class).to receive(:close_screen)
+    allow(mock_frame).to receive(:area).and_return(mock_area)
+    allow(mock_frame).to receive(:render_widget)
+    allow(mock_tui).to receive(:draw).and_yield(mock_frame)
+    areas = [mock_area, mock_area, mock_area, mock_area, mock_area]
+    allow(mock_tui).to receive_messages(
+      poll_event: double(none?: true, key?: false, mouse?: false),
+      layout_split: areas,
+      constraint_fill: double,
+      constraint_length: double,
+      paragraph: double,
+      line: double,
+      span: double,
+      style: double,
+      list: double
+    )
+
+    allow(RatatuiRuby).to receive(:run).and_yield(mock_tui)
   end
 
   it 'executes play command with a selected size' do
