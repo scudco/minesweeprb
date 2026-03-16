@@ -1,7 +1,5 @@
 # frozen_string_literal: true
 
-require 'curses'
-
 module Minesweeprb
   module Themes
     MODERN_SPRITES = {
@@ -18,24 +16,24 @@ module Minesweeprb
     }.freeze
 
     MODERN_COLORS = {
-      win: [Curses::A_BOLD | Curses::COLOR_GREEN],
-      lose: [Curses::A_BOLD | Curses::COLOR_MAGENTA],
-      clock: [Curses::A_BOLD | Curses::COLOR_CYAN],
-      win_face: [Curses::A_BOLD | Curses::COLOR_YELLOW],
-      lose_face: [Curses::A_BOLD | Curses::COLOR_RED],
-      play_face: [Curses::A_BOLD | Curses::COLOR_CYAN],
-      mine: [Curses::A_BOLD | Curses::COLOR_RED],
-      flag: [Curses::A_BOLD | Curses::COLOR_RED],
-      mark: [Curses::A_BOLD | Curses::COLOR_MAGENTA],
-      clue_0: [Curses::COLOR_BLACK],
-      clue_1: [Curses::COLOR_BLUE],
-      clue_2: [Curses::COLOR_GREEN],
-      clue_3: [Curses::COLOR_MAGENTA],
-      clue_4: [Curses::COLOR_CYAN],
-      clue_5: [Curses::COLOR_RED],
-      clue_6: [Curses::COLOR_YELLOW],
-      clue_7: [Curses::A_BOLD | Curses::COLOR_MAGENTA],
-      clue_8: [Curses::A_BOLD | Curses::COLOR_RED],
+      win: { fg: :green, modifiers: [:bold] },
+      lose: { fg: :magenta, modifiers: [:bold] },
+      clock: { fg: :cyan, modifiers: [:bold] },
+      win_face: { fg: :yellow, modifiers: [:bold] },
+      lose_face: { fg: :red, modifiers: [:bold] },
+      play_face: { fg: :cyan, modifiers: [:bold] },
+      mine: { fg: :red, modifiers: [:bold] },
+      flag: { fg: :red, modifiers: [:bold] },
+      mark: { fg: :magenta, modifiers: [:bold] },
+      clue_0: { fg: :dark_gray },
+      clue_1: { fg: :blue },
+      clue_2: { fg: :green },
+      clue_3: { fg: :magenta },
+      clue_4: { fg: :cyan },
+      clue_5: { fg: :red },
+      clue_6: { fg: :yellow },
+      clue_7: { fg: :magenta, modifiers: [:bold] },
+      clue_8: { fg: :red, modifiers: [:bold] },
     }.freeze
 
     Theme.register(Theme.new(

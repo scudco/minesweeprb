@@ -20,6 +20,8 @@ jobs:
           ruby-version: "4.0"
           bundler-cache: true
 
+      - uses: dtolnay/rust-toolchain@stable
+
       - name: Verify version matches tag
         run: |
           tag="${GITHUB_REF#refs/tags/v}"
